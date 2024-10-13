@@ -2,6 +2,11 @@
 [SIGGRAPH Asia 2024] V^3: Viewing Volumetric Videos on Mobiles via Streamable 2D Dynamic Gaussians
 
 ## Install
+Create a new environment
+```
+conda create -n videogs python=3.9
+conda activate videogs
+```
 First install CUDA and PyTorch, our code is evaluated on [CUDA 11.6](https://developer.nvidia.com/cuda-11-6-2-download-archive) and [PyTorch 1.13.1+cu116](https://pytorch.org/get-started/previous-versions/#v1131). Then install the following dependencies:
 ```
 pip install -r requirements.txt
@@ -9,13 +14,15 @@ pip install submodules/diff-gaussian-rasterization
 pip install submodules/simple-knn
 ```
 
-Install [COLMAP](https://colmap.github.io/install.html) for calibration and undistortion. 
+<!-- Install [COLMAP](https://colmap.github.io/install.html) for calibration and undistortion.  -->
 
 Install modified [NeuS2](https://github.com/19reborn/NeuS2/) for key frame point cloud generation, please clone it to `external` folder and build it. 
 ```
 cd external
 git clone --recursive https://github.com/AuthorityWang/NeuS2_K.git
 cd NeuS2_K
+cmake . -B build
+cmake --build build --config RelWithDebInfo -j
 ```
 
 ## Dataset Preparation
@@ -42,7 +49,7 @@ datasets
 
 ### Calibration
 
-
+Install [COLMAP](https://colmap.github.io/install.html) for calibration and undistortion.
 
 ### Image Undistortion
 
@@ -100,6 +107,7 @@ datasets
 ```
 ## Train
 
+### Train a group
 
 
 ## Compress

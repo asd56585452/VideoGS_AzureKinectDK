@@ -3,7 +3,6 @@ tqdm
 git+https://github.com/NVlabs/tiny-cuda-nn/#subdirectory=bindings/torch
 pymeshlab
 open3d
-shutil
 commentjson
 imageio
 pybind11
