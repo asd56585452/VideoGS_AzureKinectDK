@@ -34,20 +34,12 @@ try:
 except ImportError:
     TENSORBOARD_FOUND = False
 
-# self._features_dc = torch.empty(0)
-# self._features_rest = torch.empty(0)
-# self._scaling = torch.empty(0)
-# self._rotation = torch.empty(0)
-# self._opacity = torch.empty(0)
 def entropy_regularization_loss(current_frame_gaussian, last_frame_gaussian):
     # current_frest = current_frame_gaussian._features_rest
     current_scale = current_frame_gaussian._scaling
     current_rotation = current_frame_gaussian._rotation
     current_opacity = current_frame_gaussian._opacity
     current_attribute = []
-    # print("shape: ", current_scale.shape)
-    # print("shape: ", current_scale[1].shape)
-    # print("shape: ", current_scale[:, 1].shape)
     for i in range(current_scale.shape[1]):
         current_attribute.append(current_scale[:, i])
     for i in range(current_rotation.shape[1]):
@@ -55,9 +47,6 @@ def entropy_regularization_loss(current_frame_gaussian, last_frame_gaussian):
     for i in range(current_opacity.shape[1]):
         current_attribute.append(current_opacity[:, i])
 
-    # print("shape: ", current_opacity.shape[1])
-
-    # last_frest = last_frame_gaussian._features_rest
     last_scale = last_frame_gaussian._scaling
     last_rotation = last_frame_gaussian._rotation
     last_opacity = last_frame_gaussian._opacity
@@ -69,52 +58,38 @@ def entropy_regularization_loss(current_frame_gaussian, last_frame_gaussian):
     for i in range(last_opacity.shape[1]):
         last_attribute.append(last_opacity[:, i])
 
-    # print("shape: ", len(current_attribute))
-
+    quantization_range = 255
     loss = 0.0
     for idx in range(len(current_attribute)):
-        # find minmax
-        # print(current_attribute[idx].shape)
-        current_min = torch.min(current_attribute[idx])
-        current_max = torch.max(current_attribute[idx])
-        current_normalized = (current_attribute[idx] - current_min) / (current_max - current_min) * 255
-        current_disturb = np.random.uniform(-0.5, 0.5)
-        current_y_hat = current_normalized + current_disturb
+        delta_attribute = current_attribute[idx] - last_attribute[idx]
+        # if zero return
+        if torch.sum(delta_attribute) == 0:
+            return 0.0
+        # delta_attribute_normalize = (delta_attribute - torch.min(delta_attribute)) / (torch.max(delta_attribute) - torch.min(delta_attribute))
+        delta_attribute_min = torch.min(delta_attribute)
+        delta_attribute_max = torch.max(delta_attribute)
+        delta_attribute_normalize = (delta_attribute - delta_attribute_min) / (delta_attribute_max - delta_attribute_min) * quantization_range
+        # generate -1/2 to 1/2 noise
+        disturb_noise = np.random.uniform(-0.5, 0.5)
+        disturb_delta_attribute = delta_attribute_normalize + disturb_noise
+        disturb_delta_attribute_up = disturb_delta_attribute + 0.5
+        disturb_delta_attribute_down = disturb_delta_attribute - 0.5
 
-        last_min = torch.min(last_attribute[idx])
-        last_max = torch.max(last_attribute[idx])
-        last_normalized = (last_attribute[idx] - last_min) / (last_max - last_min) * 255
-        last_disturb = np.random.uniform(-0.5, 0.5)
-        last_y_hat = last_normalized + last_disturb
+        m1 = torch.distributions.normal.Normal(torch.mean(disturb_delta_attribute_up), torch.std(disturb_delta_attribute_up))
+        m2 = torch.distributions.normal.Normal(torch.mean(disturb_delta_attribute_down), torch.std(disturb_delta_attribute_down))
 
-        mean = torch.mean(current_normalized)
-        std = torch.std(current_normalized)
-        m1 = torch.distributions.normal.Normal(mean, std)
+        cdf1 = m1.cdf(disturb_delta_attribute)
+        cdf2 = m2.cdf(disturb_delta_attribute)
 
-        # calculate cdf for current_y_hat - last_y_hat + 1
-        cdf1 = m1.cdf(current_y_hat)
-        cdf2 = m1.cdf(last_y_hat)
-
-        # calculate cdf for current_y_hat - last_y_hat - 1
-
-        p_diff = torch.abs(cdf1 - cdf2).sum() / current_attribute[idx].shape[0]
-        # print(p_diff)
-        # print("CDF1: ", cdf1)
-        # print("CDF2: ", cdf2)
-        # print("P_DIFF: ", p_diff)
-
-        loss += -torch.log2(p_diff)
-
-    loss = loss / len(current_attribute)
-
-    # print("Entropy loss: ", loss)
+        cdf_diff = cdf1 - cdf2
+        loss += -torch.log2(torch.abs(cdf_diff).sum()) / current_attribute[idx].shape[0]
 
     return loss
 
 def temporal_loss(current_frame_gaussian, last_frame_gaussian):
     # current_frest = current_frame_gaussian._features_rest
-    current_xyz = current_frame_gaussian._xyz
-    current_fdc = current_frame_gaussian._features_dc
+    # current_xyz = current_frame_gaussian._xyz
+    # current_fdc = current_frame_gaussian._features_dc
     current_scale = current_frame_gaussian._scaling
     current_rotation = current_frame_gaussian._rotation
     current_opacity = current_frame_gaussian._opacity
@@ -122,8 +97,8 @@ def temporal_loss(current_frame_gaussian, last_frame_gaussian):
     current_attribute = [current_scale, current_rotation, current_opacity]
 
     # last_frest = last_frame_gaussian._features_rest
-    last_xyz = last_frame_gaussian._xyz
-    last_fdc = last_frame_gaussian._features_dc
+    # last_xyz = last_frame_gaussian._xyz
+    # last_fdc = last_frame_gaussian._features_dc
     last_scale = last_frame_gaussian._scaling
     last_rotation = last_frame_gaussian._rotation
     last_opacity = last_frame_gaussian._opacity
@@ -238,10 +213,6 @@ def finetune(dataset, scene, opt, pipe, last_model_path, testing_iterations, sav
 
         gaussians.update_learning_rate(iteration)
 
-        # # Every 1000 its we increase the levels of SH up to a maximum degree
-        # if iteration % 1000 == 0:
-        #     gaussians.oneupSHdegree()
-
         # Pick a random Camera
         if not viewpoint_stack:
             viewpoint_stack = scene.getTrainCameras().copy()
@@ -261,11 +232,7 @@ def finetune(dataset, scene, opt, pipe, last_model_path, testing_iterations, sav
         Ll1 = l1_loss(image, gt_image)
         temporal_loss_value = temporal_loss(gaussians, last_gaussians)
         entropy_loss = entropy_regularization_loss(gaussians, last_gaussians)
-        # print("Temporal loss: ", temporal_loss_value)
-        # print("Entropy loss: ", entropy_loss)
         loss = (1.0 - opt.lambda_dssim) * Ll1 + opt.lambda_dssim * (1.0 - ssim(image, gt_image)) + opt.lambda_temporal * temporal_loss_value + opt.lambda_entropy * entropy_loss
-        # loss = (1.0 - opt.lambda_dssim) * Ll1 + opt.lambda_dssim * (1.0 - ssim(image, gt_image)) + opt.lambda_temporal * temporal_loss_value
-        # loss = (1.0 - opt.lambda_dssim) * Ll1 + opt.lambda_dssim * (1.0 - ssim(image, gt_image))
         loss.backward()
 
         iter_end.record()
@@ -287,9 +254,6 @@ def finetune(dataset, scene, opt, pipe, last_model_path, testing_iterations, sav
                 gaussians.optimizer.step()
                 gaussians.optimizer.zero_grad(set_to_none = True)
 
-    # temporal_loss_value = temporal_loss(gaussians, last_gaussians)
-    # print("Temporal loss: {:.15f}".format(temporal_loss_value.item()))
-
     # always save gaussian after finetune
     with torch.no_grad():
         print("\n[ITER {}] Saving Gaussians".format(iteration))
@@ -308,7 +272,7 @@ def dynamic_training(dataset, opt, pipe, testing_iterations, saving_iterations, 
         print("Keyframe model not find")
         return
     
-    gtp_iterations = 500
+    gtp_iterations = 800
     # gtp_iterations = 4000
     # finetune_iterations = 3500
     finetune_iterations = 2000
