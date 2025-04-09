@@ -256,31 +256,82 @@ Our code is based on original [gaussian-splatting](https://github.com/graphdeco-
 Thanks for [Zhehao Shen](https://github.com/moqiyinlun) for his help on datasets process. 
 
 ## My command
+# --- 先定義所有需要用到的變數 ---
+
+# 路徑相關 (依你的需求修改)
+BASE_DIR="/home/cgvmis418/VideoGS"
+INPUT_BASE_NAME="RUN_NFOV_2X2BINNED_HiFi4G_location"
+PROCESSED_NAME="RUN_NFOV_2X2BINNED_HiFi4G_location_process"
+OUTPUT_NAME="RUN_NFOV_2X2BINNED_HiFi4G_location_process_3"
+
+# 參數相關 (依你的需求修改)
+FRAME_START=0
+FRAME_END=270
+GROUP_SIZE=5
+INTERVAL=1
+QP=25          # 壓縮品質參數
+CUDA_DEVICE=0  # 其他可能想設成變數的參數
+SH_DEGREE=2    # 其他可能想設成變數的參數
+RESOLUTION=1   # 其他可能想設成變數的參數
+
+# --- 使用變數執行你的指令 ---
+
+# 1. 預處理 (這裡沒用到新增的參數)
+echo "執行預處理..."
 cd preprocess
-
-python hifi4g_process.py --input /home/cgvmis418/VideoGS/datasets/RUN_NFOV_2X2BINNED_HiFi4G_location --output /home/cgvmis418/VideoGS/datasets/RUN_NFOV_2X2BINNED_HiFi4G_location_process
-
+python hifi4g_process.py --input "${BASE_DIR}/datasets/${INPUT_BASE_NAME}" --output "${BASE_DIR}/datasets/${PROCESSED_NAME}"
 cd ..
 
-python train_sequence.py --start 0 --end 270 --cuda 0 --data /home/cgvmis418/VideoGS/datasets/RUN_NFOV_2X2BINNED_HiFi4G_location_process --output /home/cgvmis418/VideoGS/output/RUN_NFOV_2X2BINNED_HiFi4G_location_process --sh 0 --interval 1 --group_size 10 --resolution 2
+# 2. 訓練
+echo "執行訓練..."
+python train_sequence.py \
+    --start ${FRAME_START} \
+    --end ${FRAME_END} \
+    --cuda ${CUDA_DEVICE} \
+    --data "${BASE_DIR}/datasets/${PROCESSED_NAME}" \
+    --output "${BASE_DIR}/output/${OUTPUT_NAME}" \
+    --sh ${SH_DEGREE} \
+    --interval ${INTERVAL} \
+    --group_size ${GROUP_SIZE} \
+    --resolution ${RESOLUTION}
 
+# 3. 壓縮 - Checkpoint 轉圖片
+echo "執行 Checkpoint 轉圖片..."
 cd compress
+python compress_ckpt_2_image_precompute.py \
+    --frame_start ${FRAME_START} \
+    --frame_end ${FRAME_END} \
+    --group_size ${GROUP_SIZE} \
+    --interval ${INTERVAL} \
+    --ply_path "${BASE_DIR}/output/${OUTPUT_NAME}/checkpoint/" \
+    --output_folder "${BASE_DIR}/output/${OUTPUT_NAME}/feature_image" \
+    --sh_degree ${SH_DEGREE}
 
-python compress_ckpt_2_image_precompute.py --frame_start 0 --frame_end 270 --group_size 10 --interval 1 --ply_path /home/cgvmis418/VideoGS/output/RUN_NFOV_2X2BINNED_HiFi4G_location_process/checkpoint/ --output_folder /home/cgvmis418/VideoGS/output/RUN_NFOV_2X2BINNED_HiFi4G_location_process/feature_image --sh_degree 0
+# 4. 壓縮 - 圖片轉影片
+echo "執行圖片轉影片..."
+python compress_image_2_video.py \
+    --frame_start ${FRAME_START} \
+    --frame_end ${FRAME_END} \
+    --group_size ${GROUP_SIZE} \
+    --output_path "${BASE_DIR}/output/${OUTPUT_NAME}" \
+    --qp ${QP}
 
-python compress_image_2_video.py --frame_start 0 --frame_end 270 --group_size 10 --output_path /home/cgvmis418/VideoGS/output/RUN_NFOV_2X2BINNED_HiFi4G_location_process --qp 25
-
-sudo cp -r /home/cgvmis418/VideoGS/output/RUN_NFOV_2X2BINNED_HiFi4G_location_process/feature_video/png_all_25 /var/www/html/files/RUN_NFOV_2X2BINNED_HiFi4G_location_process_feature_video_png_all_25
-
+# 5. 複製結果
+echo "複製結果到網頁伺服器..."
+# 注意這裡路徑中也使用了 $QP 變數
+sudo cp -r "${BASE_DIR}/output/${OUTPUT_NAME}/feature_video/png_all_${QP}" "/var/www/html/files/${OUTPUT_NAME}_feature_video_png_all_${QP}"
 cd ..
 
+# 6. 執行 Viewer (這裡沒用到新增的參數)
+echo "執行 Viewer..."
 cd VideoGS_SIBR_viewers
-
-cmake -Bbuild . -DCMAKE_BUILD_TYPE=Release
-
+# 編譯
 cmake --build build -j24 --target install
+# 假設編譯已完成
+./install/bin/SIBR_gaussianViewer_app -m "${BASE_DIR}/output/${OUTPUT_NAME}/checkpoint/0"
+cd ..
 
-./install/bin/SIBR_gaussianViewer_app -m /home/cgvmis418/VideoGS/output/RUN_NFOV_2X2BINNED_HiFi4G_location_process/checkpoint/0
+echo "指令執行完畢。"
 
 If you find our work useful in your research, please consider citing our paper.
 ```
