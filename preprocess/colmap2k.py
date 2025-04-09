@@ -154,7 +154,7 @@ if __name__ == "__main__":
     print(f"outputting to {OUT_PATH}...")
 
     # bin 2 txt
-    bin2txt(TEXT_FOLDER)
+    # bin2txt(TEXT_FOLDER)
 
     cameras = {}
     with open(os.path.join(TEXT_FOLDER,"cameras.txt"), "r") as f:
