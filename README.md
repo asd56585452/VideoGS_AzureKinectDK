@@ -255,6 +255,33 @@ Our code is based on original [gaussian-splatting](https://github.com/graphdeco-
 
 Thanks for [Zhehao Shen](https://github.com/moqiyinlun) for his help on datasets process. 
 
+## My command
+cd preprocess
+
+python hifi4g_process.py --input /home/cgvmis418/VideoGS/datasets/RUN_NFOV_2X2BINNED_HiFi4G_location --output /home/cgvmis418/VideoGS/datasets/RUN_NFOV_2X2BINNED_HiFi4G_location_process
+
+cd ..
+
+python train_sequence.py --start 0 --end 270 --cuda 0 --data /home/cgvmis418/VideoGS/datasets/RUN_NFOV_2X2BINNED_HiFi4G_location_process --output /home/cgvmis418/VideoGS/output/RUN_NFOV_2X2BINNED_HiFi4G_location_process --sh 0 --interval 1 --group_size 10 --resolution 2
+
+cd compress
+
+python compress_ckpt_2_image_precompute.py --frame_start 0 --frame_end 270 --group_size 10 --interval 1 --ply_path /home/cgvmis418/VideoGS/output/RUN_NFOV_2X2BINNED_HiFi4G_location_process/checkpoint/ --output_folder /home/cgvmis418/VideoGS/output/RUN_NFOV_2X2BINNED_HiFi4G_location_process/feature_image --sh_degree 0
+
+python compress_image_2_video.py --frame_start 0 --frame_end 270 --group_size 10 --output_path /home/cgvmis418/VideoGS/output/RUN_NFOV_2X2BINNED_HiFi4G_location_process --qp 25
+
+sudo cp -r /home/cgvmis418/VideoGS/output/RUN_NFOV_2X2BINNED_HiFi4G_location_process/feature_video/png_all_25 /var/www/html/files/RUN_NFOV_2X2BINNED_HiFi4G_location_process_feature_video_png_all_25
+
+cd ..
+
+cd VideoGS_SIBR_viewers
+
+cmake -Bbuild . -DCMAKE_BUILD_TYPE=Release
+
+cmake --build build -j24 --target install
+
+./install/bin/SIBR_gaussianViewer_app -m /home/cgvmis418/VideoGS/output/RUN_NFOV_2X2BINNED_HiFi4G_location_process/checkpoint/0
+
 If you find our work useful in your research, please consider citing our paper.
 ```
 @article{wang2024v,
