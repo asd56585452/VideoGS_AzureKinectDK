@@ -262,17 +262,17 @@ Thanks for [Zhehao Shen](https://github.com/moqiyinlun) for his help on datasets
 BASE_DIR="/home/cgvmis418/VideoGS"
 INPUT_BASE_NAME="RUN_NFOV_2X2BINNED_HiFi4G_location"
 PROCESSED_NAME="RUN_NFOV_2X2BINNED_HiFi4G_location_process"
-OUTPUT_NAME="RUN_NFOV_2X2BINNED_HiFi4G_location_process_3"
+OUTPUT_NAME="RUN_NFOV_2X2BINNED_HiFi4G_location_process_6"
 
 # 參數相關 (依你的需求修改)
 FRAME_START=0
 FRAME_END=270
-GROUP_SIZE=5
+GROUP_SIZE=2
 INTERVAL=1
-QP=25          # 壓縮品質參數
+QP=0          # 壓縮品質參數
 CUDA_DEVICE=0  # 其他可能想設成變數的參數
-SH_DEGREE=2    # 其他可能想設成變數的參數
-RESOLUTION=1   # 其他可能想設成變數的參數
+SH_DEGREE=0    # 其他可能想設成變數的參數
+RESOLUTION=2   # 其他可能想設成變數的參數
 
 # --- 使用變數執行你的指令 ---
 
