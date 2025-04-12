@@ -35,6 +35,7 @@ if __name__ == '__main__':
     group_size = int(args.group_size)
     resolution_scale = int(args.resolution)
     max_retries = 3 # 設定最大重試次數
+    retry_delay = 5
 
     # neus2_meshlab_filter_path = os.path.join(data_root_path, "luoxi_filter.mlx")
 
