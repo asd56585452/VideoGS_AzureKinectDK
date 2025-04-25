@@ -44,6 +44,8 @@ def parse_args():
     parser.add_argument("--vocab_path", default="", help="Vocabulary tree path.")
     parser.add_argument("--overwrite", action="store_true", help="Do not ask for confirmation for overwriting existing images and COLMAP data.")
     parser.add_argument("--mask_categories", nargs="*", type=str, default=[], help="Object categories that should be masked out from the training images. See `scripts/category2id.json` for supported categories.")
+    parser.add_argument("--skip_bin_to_text", action="store_true", help="Skip white colmap format is text")
+    parser.add_argument("--skip_black_img", action="store_true", help="Skip white image in mix dataset")
     args = parser.parse_args()
     return args
 
@@ -154,7 +156,8 @@ if __name__ == "__main__":
     print(f"outputting to {OUT_PATH}...")
 
     # bin 2 txt
-    # bin2txt(TEXT_FOLDER)
+    if not args.skip_bin_to_text:
+        bin2txt(TEXT_FOLDER)
 
     cameras = {}
     with open(os.path.join(TEXT_FOLDER,"cameras.txt"), "r") as f:
@@ -284,6 +287,8 @@ if __name__ == "__main__":
                 # why is this requireing a relitive path while using ^
                 image_rel = "images"
                 name = str(f"{image_rel}/{'_'.join(elems[9:])}")
+                if os.path.splitext(name)[0].split('_')[-1]=="black" and args.skip_black_img:
+                    continue
                 b = 100 #sharpness(name)
                 print(name, "sharpness=",b)
                 image_id = int(elems[0])
