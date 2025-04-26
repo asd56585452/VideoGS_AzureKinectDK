@@ -96,7 +96,8 @@ if __name__ == '__main__':
 
             # prune
             prune_iterations = 4000
-            prune_gaussian_command = f"CUDA_VISIBLE_DEVICES={card_id} python prune_gaussian.py -s {frame_path} -m {frame_model_path} --sh_degree {sh} -r {resolution_scale} --iterations {prune_iterations}"
+            prune_percentage = 0.5
+            prune_gaussian_command = f"CUDA_VISIBLE_DEVICES={card_id} python prune_gaussian.py -s {frame_path} -m {frame_model_path} --sh_degree {sh} -r {resolution_scale} --iterations {prune_iterations} --prune_percentage {prune_percentage}"
             os.system(prune_gaussian_command)
 
             # rest frame

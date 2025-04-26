@@ -40,6 +40,8 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
 
     bg_color = [1, 1, 1] if dataset.white_background else [0, 0, 0]
     background = torch.tensor(bg_color, dtype=torch.float32, device="cuda")
+    background_black = torch.tensor([0, 0, 0], dtype=torch.float32, device="cuda")
+    background_white = torch.tensor([1, 1, 1], dtype=torch.float32, device="cuda")
 
     iter_start = torch.cuda.Event(enable_timing = True)
     iter_end = torch.cuda.Event(enable_timing = True)
@@ -56,6 +58,14 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
                 net_image_bytes = None
                 custom_cam, do_training, pipe.convert_SHs_python, pipe.compute_cov3D_python, keep_alive, scaling_modifer = network_gui.receive()
                 if custom_cam != None:
+
+                    #mix background color
+                    mix_color_type = os.path.splitext(custom_cam.image_name)[0].split('_')[-1]
+                    if mix_color_type=="black":
+                        background = background_black
+                    elif mix_color_type=="white":
+                        background = background_white
+
                     net_image = render(custom_cam, gaussians, pipe, background, scaling_modifer)["render"]
                     net_image_bytes = memoryview((torch.clamp(net_image, min=0, max=1.0) * 255).byte().permute(1, 2, 0).contiguous().cpu().numpy())
                 network_gui.send(net_image_bytes, dataset.source_path)
@@ -83,6 +93,13 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
 
         bg = torch.rand((3), device="cuda") if opt.random_background else background
 
+        #mix background color
+        mix_color_type = os.path.splitext(viewpoint_cam.image_name)[0].split('_')[-1]
+        if mix_color_type=="black":
+            bg = background_black
+        elif mix_color_type=="white":
+            bg = background_white
+
         render_pkg = render(viewpoint_cam, gaussians, pipe, bg)
         image, viewspace_point_tensor, visibility_filter, radii = render_pkg["render"], render_pkg["viewspace_points"], render_pkg["visibility_filter"], render_pkg["radii"]
 
@@ -104,7 +121,7 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
                 progress_bar.close()
 
             # Log and save
-            training_report(tb_writer, iteration, Ll1, loss, l1_loss, iter_start.elapsed_time(iter_end), testing_iterations, scene, render, (pipe, background))
+            training_report(tb_writer, iteration, Ll1, loss, l1_loss, iter_start.elapsed_time(iter_end), testing_iterations, scene, render, (pipe, background_white))
             if (iteration in saving_iterations):
                 print("\n[ITER {}] Saving Gaussians".format(iteration))
                 scene.save(iteration)
@@ -162,8 +179,16 @@ def training_report(tb_writer, iteration, Ll1, loss, l1_loss, elapsed, testing_i
     # Report test and samples of training set
     if iteration in testing_iterations:
         torch.cuda.empty_cache()
+
+        #mix background color
+        black_viewpoint = []
+        for viewpoint in scene.getTrainCameras():
+            if os.path.splitext(viewpoint.image_name)[0].split('_')[-1]=="black":
+                continue
+            black_viewpoint.append(viewpoint)
         validation_configs = ({'name': 'test', 'cameras' : scene.getTestCameras()}, 
-                              {'name': 'train', 'cameras' : [scene.getTrainCameras()[idx % len(scene.getTrainCameras())] for idx in range(5, 30, 5)]})
+                              {'name': 'train', 'cameras' : black_viewpoint})
+                              #{'name': 'train', 'cameras' : [scene.getTrainCameras()[idx % len(scene.getTrainCameras())] for idx in range(5, 30, 5)]})
 
         for config in validation_configs:
             if config['cameras'] and len(config['cameras']) > 0:

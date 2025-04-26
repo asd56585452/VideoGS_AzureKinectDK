@@ -36,6 +36,8 @@ def finetune(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
 
     bg_color = [1, 1, 1] if dataset.white_background else [0, 0, 0]
     background = torch.tensor(bg_color, dtype=torch.float32, device="cuda")
+    background_black = torch.tensor([0, 0, 0], dtype=torch.float32, device="cuda")
+    background_white = torch.tensor([1, 1, 1], dtype=torch.float32, device="cuda")
 
     iter_start = torch.cuda.Event(enable_timing = True)
     iter_end = torch.cuda.Event(enable_timing = True)
@@ -61,6 +63,13 @@ def finetune(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
 
         bg = torch.rand((3), device="cuda") if opt.random_background else background
 
+        #mix background color
+        mix_color_type = os.path.splitext(viewpoint_cam.image_name)[0].split('_')[-1]
+        if mix_color_type=="black":
+            bg = background_black
+        elif mix_color_type=="white":
+            bg = background_white
+
         render_pkg = render(viewpoint_cam, gaussians, pipe, bg)
         image, viewspace_point_tensor, visibility_filter, radii = render_pkg["render"], render_pkg["viewspace_points"], render_pkg["visibility_filter"], render_pkg["radii"]
 
@@ -82,7 +91,7 @@ def finetune(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
                 progress_bar.close()
 
             # Log and save
-            training_report(None, iteration, Ll1, loss, l1_loss, iter_start.elapsed_time(iter_end), testing_iterations, gaussians, scene, render, (pipe, background))
+            training_report(None, iteration, Ll1, loss, l1_loss, iter_start.elapsed_time(iter_end), testing_iterations, gaussians, scene, render, (pipe, background_white))
 
             # Optimizer step
             if iteration < opt.iterations:
@@ -99,8 +108,16 @@ def training_report(tb_writer, iteration, Ll1, loss, l1_loss, elapsed, testing_i
     # Report test and samples of training set
     if iteration in testing_iterations:
         torch.cuda.empty_cache()
+
+        #mix background color
+        black_viewpoint = []
+        for viewpoint in scene.getTrainCameras():
+            if os.path.splitext(viewpoint.image_name)[0].split('_')[-1]=="black":
+                continue
+            black_viewpoint.append(viewpoint)
         validation_configs = ({'name': 'test', 'cameras' : scene.getTestCameras()}, 
-                              {'name': 'train', 'cameras' : [scene.getTrainCameras()[idx % len(scene.getTrainCameras())] for idx in range(5, 30, 5)]})
+                              {'name': 'train', 'cameras' : black_viewpoint})
+                              #{'name': 'train', 'cameras' : [scene.getTrainCameras()[idx % len(scene.getTrainCameras())] for idx in range(5, 30, 5)]})
 
         for config in validation_configs:
             if config['cameras'] and len(config['cameras']) > 0:
@@ -159,6 +176,7 @@ if __name__ == "__main__":
     parser.add_argument("--quiet", action="store_true")
     parser.add_argument("--checkpoint_iterations", nargs="+", type=int, default=[])
     parser.add_argument("--start_checkpoint", type=str, default = None)
+    parser.add_argument("--prune_percentage", type=float ,default = 0.5)
     args = parser.parse_args(sys.argv[1:])
     args.save_iterations.append(args.iterations)
     
@@ -170,7 +188,7 @@ if __name__ == "__main__":
     torch.autograd.set_detect_anomaly(args.detect_anomaly)
 
     # prune percentage
-    prune_percentage = 0.5 # 20%
+    prune_percentage = args.prune_percentage # 20%
     last_ckpt_iter = 12000
     # search for the last checkpoint
     pcd_path = os.path.join(args.model_path, "point_cloud")

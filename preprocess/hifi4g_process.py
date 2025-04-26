@@ -24,6 +24,9 @@ if __name__ == '__main__':
     output_json_path = os.path.join(args.output, 'transforms.json')
     colmap2k_cmd = f"python colmap2k.py --text {text_path} --out {output_json_path} --keep_colmap_coords --skip_bin_to_text --skip_black_img"
     os.system(colmap2k_cmd)
+    output_m_json_path = os.path.join(args.output, 'transforms_m.json')
+    colmap2k_m_cmd = f"python colmap2k.py --text {text_path} --out {output_m_json_path} --keep_colmap_coords --skip_bin_to_text"
+    os.system(colmap2k_m_cmd)
 
     # move the data
     images_folder_path = os.path.join(args.input, 'image_undistortion_white')
@@ -41,3 +44,4 @@ if __name__ == '__main__':
     
         # copy json
         shutil.copy(output_json_path, os.path.join(args.output, frame, 'transforms.json'))
+        shutil.copy(output_m_json_path, os.path.join(args.output, frame, 'transforms_m.json'))
