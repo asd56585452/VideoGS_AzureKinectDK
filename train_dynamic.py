@@ -123,6 +123,8 @@ def train_rt_network(dataset, scene, pipe, last_model_path, init_model_path, gtp
 
     bg_color = [1, 1, 1] if dataset.white_background else [0, 0, 0]
     background = torch.tensor(bg_color, dtype=torch.float32, device="cuda")
+    background_black = torch.tensor([0, 0, 0], dtype=torch.float32, device="cuda")
+    background_white = torch.tensor([1, 1, 1], dtype=torch.float32, device="cuda")
     lambda_dssim = 0.2
 
     iter_start = torch.cuda.Event(enable_timing = True)
@@ -142,6 +144,13 @@ def train_rt_network(dataset, scene, pipe, last_model_path, init_model_path, gtp
         viewpoint_cam = viewpoint_stack.pop(randint(0, len(viewpoint_stack)-1))
 
         bg = background
+
+        #mix background color
+        mix_color_type = os.path.splitext(viewpoint_cam.image_name)[0].split('_')[-1]
+        if mix_color_type=="black":
+            bg = background_black
+        elif mix_color_type=="white":
+            bg = background_white
 
         # first predict gtp
         gaussians.global_predict()
@@ -356,7 +365,7 @@ def training_report(iteration, Ll1, loss, l1_loss, elapsed, testing_iterations, 
     # Report test and samples of training set
     if iteration in testing_iterations:
         torch.cuda.empty_cache()
-        
+
         #mix background color
         black_viewpoint = []
         for viewpoint in scene.getTrainCameras():
