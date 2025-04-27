@@ -257,22 +257,24 @@ Thanks for [Zhehao Shen](https://github.com/moqiyinlun) for his help on datasets
 
 ## My command
 # --- 先定義所有需要用到的變數 ---
+conda activate videogs
+
 
 # 路徑相關 (依你的需求修改)
 BASE_DIR="/home/cgvmis418/VideoGS"
-INPUT_BASE_NAME="RUN_NFOV_2X2BINNED_HiFi4G_location"
-PROCESSED_NAME="RUN_NFOV_2X2BINNED_HiFi4G_location_process"
-OUTPUT_NAME="RUN_NFOV_2X2BINNED_HiFi4G_location_process_6"
+INPUT_BASE_NAME="RUN_HiFi4G_location_9_M"
+PROCESSED_NAME="RUN_HiFi4G_location_9_M_process"
+OUTPUT_NAME="RUN_HiFi4G_location_9_M_process_2"
 
 # 參數相關 (依你的需求修改)
 FRAME_START=0
-FRAME_END=270
+FRAME_END=420
 GROUP_SIZE=2
 INTERVAL=1
 QP=0          # 壓縮品質參數
 CUDA_DEVICE=0  # 其他可能想設成變數的參數
 SH_DEGREE=0    # 其他可能想設成變數的參數
-RESOLUTION=2   # 其他可能想設成變數的參數
+RESOLUTION=4   # 其他可能想設成變數的參數
 
 # --- 使用變數執行你的指令 ---
 
@@ -319,12 +321,12 @@ python compress_image_2_video.py \
 # 5. 複製結果
 echo "複製結果到網頁伺服器..."
 # 注意這裡路徑中也使用了 $QP 變數
+sudo rm -r "/var/www/html/files/${OUTPUT_NAME}_feature_video_png_all_${QP}"
 sudo cp -r "${BASE_DIR}/output/${OUTPUT_NAME}/feature_video/png_all_${QP}" "/var/www/html/files/${OUTPUT_NAME}_feature_video_png_all_${QP}"
-cd ..
 
 # 6. 執行 Viewer (這裡沒用到新增的參數)
 echo "執行 Viewer..."
-cd VideoGS_SIBR_viewers
+cd ../VideoGS_SIBR_viewers
 # 編譯
 cmake --build build -j24 --target install
 # 假設編譯已完成
