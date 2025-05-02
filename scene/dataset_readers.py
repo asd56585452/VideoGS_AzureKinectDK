@@ -245,6 +245,7 @@ def readNerfSyntheticInfo(path, white_background, eval, extension=".png", ply_pa
     nerf_normalization = getNerfppNorm(train_cam_infos)
 
     ply_path = os.path.join(path, "points3d.ply")
+    txt_path = os.path.join(path, "points3D.txt")
     if not os.path.exists(ply_path):
         # # Since this data set has no colmap data, we start with random points
         # num_pts = 100_000
@@ -256,7 +257,8 @@ def readNerfSyntheticInfo(path, white_background, eval, extension=".png", ply_pa
         # pcd = BasicPointCloud(points=xyz, colors=SH2RGB(shs), normals=np.zeros((num_pts, 3)))
 
         # storePly(ply_path, xyz, SH2RGB(shs) * 255)
-        pass
+        xyz, rgb, _ = read_points3D_text(txt_path)
+        storePly(ply_path, xyz, rgb)
     try:
         pcd = fetchPly(ply_path)
     except:
@@ -282,6 +284,7 @@ def readMixNerfSyntheticInfo(path, white_background, eval, extension=".png", ply
     nerf_normalization = getNerfppNorm(train_cam_infos)
 
     ply_path = os.path.join(path, "points3d.ply")
+    txt_path = os.path.join(path, "points3D.txt")
     if not os.path.exists(ply_path):
         # # Since this data set has no colmap data, we start with random points
         # num_pts = 100_000
@@ -293,7 +296,8 @@ def readMixNerfSyntheticInfo(path, white_background, eval, extension=".png", ply
         # pcd = BasicPointCloud(points=xyz, colors=SH2RGB(shs), normals=np.zeros((num_pts, 3)))
 
         # storePly(ply_path, xyz, SH2RGB(shs) * 255)
-        pass
+        xyz, rgb, _ = read_points3D_text(txt_path)
+        storePly(ply_path, xyz, rgb)
     try:
         pcd = fetchPly(ply_path)
     except:

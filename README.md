@@ -262,9 +262,9 @@ conda activate videogs
 
 # 路徑相關 (依你的需求修改)
 BASE_DIR="/home/cgvmis418/VideoGS"
-INPUT_BASE_NAME="RUN_HiFi4G_location_9_M"
-PROCESSED_NAME="RUN_HiFi4G_location_9_M_process"
-OUTPUT_NAME="RUN_HiFi4G_location_9_M_process_2"
+INPUT_BASE_NAME="RUN_HiFi4G_location_9_M_PCD"
+PROCESSED_NAME="RUN_HiFi4G_location_9_M_PCD_process"
+OUTPUT_NAME="RUN_HiFi4G_location_9_M_PCD_process_1"
 
 # 參數相關 (依你的需求修改)
 FRAME_START=0
@@ -281,7 +281,7 @@ RESOLUTION=4   # 其他可能想設成變數的參數
 # 1. 預處理 (這裡沒用到新增的參數)
 echo "執行預處理..."
 cd preprocess
-python hifi4g_process.py --input "${BASE_DIR}/datasets/${INPUT_BASE_NAME}" --output "${BASE_DIR}/datasets/${PROCESSED_NAME}"
+python hifi4g_process.py --input "${BASE_DIR}/datasets/${INPUT_BASE_NAME}" --output "${BASE_DIR}/datasets/${PROCESSED_NAME}" --format418 --point3d
 cd ..
 
 # 2. 訓練
@@ -295,7 +295,8 @@ python train_sequence.py \
     --sh ${SH_DEGREE} \
     --interval ${INTERVAL} \
     --group_size ${GROUP_SIZE} \
-    --resolution ${RESOLUTION}
+    --resolution ${RESOLUTION} \
+    --point3d
 
 # 3. 壓縮 - Checkpoint 轉圖片
 echo "執行 Checkpoint 轉圖片..."

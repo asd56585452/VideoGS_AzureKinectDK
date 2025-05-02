@@ -22,6 +22,7 @@ if __name__ == '__main__':
     parser.add_argument('--interval', type=str, default='')
     parser.add_argument('--group_size', type=str, default='')
     parser.add_argument('--resolution', type=int, default=2)
+    parser.add_argument('--point3d', action="store_true", help='If use pcd as init')
     args = parser.parse_args()
 
     print(args.start, args.end)
@@ -61,29 +62,30 @@ if __name__ == '__main__':
             frame_neus2_ckpt_output_path = os.path.join(frame_neus2_output_path, "frame.msgpack")
             frame_neus2_mesh_output_path = os.path.join(frame_neus2_output_path, "points3d.obj")
             
-            """NeuS2"""
-            # neus2 command
-            script_path = "scripts/run.py"
-            neus2_command = f"cd external/NeuS2_K && CUDA_VISIBLE_DEVICES={card_id} python {script_path} --scene {frame_path} --name neus --mode nerf --save_snapshot {frame_neus2_ckpt_output_path} --save_mesh --save_mesh_path {frame_neus2_mesh_output_path} && cd ../.."
-            os.system(neus2_command)
-            delete_neus2_output_path = os.path.join(frame_path, "output")
-            shutil.rmtree(delete_neus2_output_path)
+            if not args.point3d:
+                """NeuS2"""
+                # neus2 command
+                script_path = "scripts/run.py"
+                neus2_command = f"cd external/NeuS2_K && CUDA_VISIBLE_DEVICES={card_id} python {script_path} --scene {frame_path} --name neus --mode nerf --save_snapshot {frame_neus2_ckpt_output_path} --save_mesh --save_mesh_path {frame_neus2_mesh_output_path} && cd ../.."
+                os.system(neus2_command)
+                delete_neus2_output_path = os.path.join(frame_path, "output")
+                shutil.rmtree(delete_neus2_output_path)
 
-            # revert axis
-            mesh1 = o3d.io.read_triangle_mesh(frame_neus2_mesh_output_path)
-            vertices = np.asarray(mesh1.vertices)
-            vertices = vertices[:,[2,0,1]]
-            mesh1.vertices = o3d.utility.Vector3dVector(vertices)
-            o3d.io.write_triangle_mesh(frame_neus2_mesh_output_path, mesh1)
+                # revert axis
+                mesh1 = o3d.io.read_triangle_mesh(frame_neus2_mesh_output_path)
+                vertices = np.asarray(mesh1.vertices)
+                vertices = vertices[:,[2,0,1]]
+                mesh1.vertices = o3d.utility.Vector3dVector(vertices)
+                o3d.io.write_triangle_mesh(frame_neus2_mesh_output_path, mesh1)
 
-            # use pymeshlab to convert obj to point cloud
-            ms = pymeshlab.MeshSet()
-            ms.load_new_mesh(frame_neus2_mesh_output_path)
-            # ms.load_filter_script(neus2_meshlab_filter_path)
-            # ms.apply_filter_script()
-            ms.generate_simplified_point_cloud(samplenum = 100000) 
-            frame_points3d_output_path = os.path.join(frame_path, "points3d.ply")
-            ms.save_current_mesh(frame_points3d_output_path, binary = True, save_vertex_normal = False)
+                # use pymeshlab to convert obj to point cloud
+                ms = pymeshlab.MeshSet()
+                ms.load_new_mesh(frame_neus2_mesh_output_path)
+                # ms.load_filter_script(neus2_meshlab_filter_path)
+                # ms.apply_filter_script()
+                ms.generate_simplified_point_cloud(samplenum = 100000) 
+                frame_points3d_output_path = os.path.join(frame_path, "points3d.ply")
+                ms.save_current_mesh(frame_points3d_output_path, binary = True, save_vertex_normal = False)
 
 
             """ Gaussian """
