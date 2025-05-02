@@ -37,6 +37,8 @@ if __name__ == '__main__':
     resolution_scale = int(args.resolution)
     max_retries = 3 # 設定最大重試次數
     retry_delay = 5
+    psnrs = []
+    start_time = time.time()
 
     # neus2_meshlab_filter_path = os.path.join(data_root_path, "luoxi_filter.mlx")
 
@@ -173,6 +175,7 @@ if __name__ == '__main__':
                         print("成功：命令執行完成且滿足所有條件。")
                         print("========================================")
                         success = True
+                        psnrs.append(psnr_value)
 
                         # --- 輸出成功執行的完整結果 ---
                         print("\n--- 命令成功執行結果 ---")
@@ -235,3 +238,5 @@ if __name__ == '__main__':
 
 
             print(f"Finish {group_start} to {group_end}")
+    
+    print(f"花費時間:{time.time()-start_time}秒，平均psnr:{ np.mean(psnrs)}")
