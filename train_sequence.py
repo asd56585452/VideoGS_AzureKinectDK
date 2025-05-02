@@ -191,6 +191,9 @@ if __name__ == '__main__':
                     else:
                         # 條件未滿足，準備重試
                         print("條件未滿足，準備重試...")
+                        print("\n--- STDERR ---")
+                        print(stderr if stderr else "<無錯誤輸出>")
+                        print("\n------------------------")
                         # (可以保留之前的詳細失敗原因輸出)
                         if return_code != 0: print("  - 原因：命令返回碼非零")
                         if not found_completion_string: print(f"  - 原因：未找到完成字串 '{completion_string}'")
