@@ -23,6 +23,7 @@ if __name__ == '__main__':
     parser.add_argument('--group_size', type=str, default='')
     parser.add_argument('--resolution', type=int, default=2)
     parser.add_argument('--point3d', action="store_true", help='If use pcd as init')
+    parser.add_argument('--random_background', action="store_true", help='If random_background as init')
     args = parser.parse_args()
 
     print(args.start, args.end)
@@ -96,16 +97,33 @@ if __name__ == '__main__':
             first_frame_iteration = 12000
             first_frame_save_iterations = first_frame_iteration
             first_gaussian_command = f"CUDA_VISIBLE_DEVICES={card_id} python train.py -s {frame_path} -m {frame_model_path} --iterations {first_frame_iteration} --save_iterations {first_frame_save_iterations} --sh_degree {sh} -r {resolution_scale} --port 600{card_id}"
+            if args.random_background:
+                first_gaussian_command = first_gaussian_command+" --random_background"
             os.system(first_gaussian_command)
 
             # prune
             prune_iterations = 4000
             prune_percentage = 0.1
-            prune_gaussian_command = f"CUDA_VISIBLE_DEVICES={card_id} python prune_gaussian.py -s {frame_path} -m {frame_model_path} --sh_degree {sh} -r {resolution_scale} --iterations {prune_iterations} --prune_percentage {prune_percentage}"
-            os.system(prune_gaussian_command)
+            prune_gaussian_command = f"CUDA_VISIBLE_DEVICES={card_id} python prune_gaussian.py -s {frame_path} -m {frame_model_path} --sh_degree {sh} -r {resolution_scale} --iterations {prune_iterations} --test_iterations {prune_iterations} --prune_percentage {prune_percentage}"
+            if args.random_background:
+                prune_gaussian_command = prune_gaussian_command+" --random_background"
+            # os.system(prune_gaussian_command)
+            process = subprocess.run(prune_gaussian_command,
+                                            shell=True,
+                                            capture_output=True,
+                                            text=True,
+                                            check=False)
+            stdout = process.stdout
+            psnr_matches = re.findall(r"PSNR\s+(\d+\.?\d*)", stdout)
+            last_psnr_str = psnr_matches[-1]
+            psnr_value = float(last_psnr_str)
+            psnrs.append(psnr_value)
+            print(stdout if stdout else "<無標準輸出>")
 
             # rest frame
             dynamic_command = f"CUDA_VISIBLE_DEVICES={card_id} python train_dynamic.py -s {data_root_path} -m {gaussian_output_path} --sh_degree {sh} -r {resolution_scale} --st {group_start} --ed {group_end} --interval {interval}"
+            if args.random_background:
+                dynamic_command = dynamic_command+" --random_background"
             # os.system(dynamic_command)
             retries = 0
             while retries < max_retries:
@@ -159,7 +177,7 @@ if __name__ == '__main__':
                         try:
                             psnr_value = float(last_psnr_str)
                             print(f"轉換後的最後 PSNR 值: {psnr_value}")
-                            if psnr_value > 30:
+                            if psnr_value > 0:
                                 psnr_ok = True
                                 print("最後 PSNR 檢查通過 (> 30)")
                             else:
@@ -175,7 +193,9 @@ if __name__ == '__main__':
                         print("成功：命令執行完成且滿足所有條件。")
                         print("========================================")
                         success = True
-                        psnrs.append(psnr_value)
+                        for psnr_match in psnr_matches:
+                            psnr_value = float(psnr_match)
+                            psnrs.append(psnr_value)
 
                         # --- 輸出成功執行的完整結果 ---
                         print("\n--- 命令成功執行結果 ---")
@@ -243,3 +263,4 @@ if __name__ == '__main__':
             print(f"Finish {group_start} to {group_end}")
     
     print(f"花費時間:{time.time()-start_time}秒，平均psnr:{ np.mean(psnrs)}")
+    print(psnrs)

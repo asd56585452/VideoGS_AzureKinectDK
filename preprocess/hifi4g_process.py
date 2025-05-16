@@ -11,6 +11,7 @@ if __name__ == '__main__':
     parser.add_argument('--move', type=bool, default=False, help='If move the original data to the target folder')
     parser.add_argument('--format418', action="store_true", help='If use ourself data format')
     parser.add_argument('--point3d', action="store_true", help='If use pcd as init')
+    parser.add_argument('--mixdataset', action="store_true", help='If use mixdataset as init')
     args = parser.parse_args()
 
     # assert input and output are same
@@ -25,11 +26,15 @@ if __name__ == '__main__':
     text_path = os.path.join(args.input, 'colmap', 'sparse')
     output_json_path = os.path.join(args.output, 'transforms.json')
     if args.format418 :
-        colmap2k_cmd = f"python colmap2k.py --text {text_path} --out {output_json_path} --keep_colmap_coords --skip_bin_to_text --skip_black_img"
-        os.system(colmap2k_cmd)
-        output_m_json_path = os.path.join(args.output, 'transforms_m.json')
-        colmap2k_m_cmd = f"python colmap2k.py --text {text_path} --out {output_m_json_path} --keep_colmap_coords --skip_bin_to_text"
-        os.system(colmap2k_m_cmd)
+        if args.mixdataset:
+            colmap2k_cmd = f"python colmap2k.py --text {text_path} --out {output_json_path} --keep_colmap_coords --skip_bin_to_text --skip_black_img"
+            os.system(colmap2k_cmd)
+            output_m_json_path = os.path.join(args.output, 'transforms_m.json')
+            colmap2k_m_cmd = f"python colmap2k.py --text {text_path} --out {output_m_json_path} --keep_colmap_coords --skip_bin_to_text"
+            os.system(colmap2k_m_cmd)
+        else :
+            colmap2k_cmd = f"python colmap2k.py --text {text_path} --out {output_json_path} --keep_colmap_coords --skip_bin_to_text"
+            os.system(colmap2k_cmd)
     else:
         colmap2k_cmd = f"python colmap2k.py --text {text_path} --out {output_json_path} --keep_colmap_coords"
         os.system(colmap2k_cmd)
@@ -50,7 +55,8 @@ if __name__ == '__main__':
     
         # copy json
         shutil.copy(output_json_path, os.path.join(args.output, frame, 'transforms.json'))
-        shutil.copy(output_m_json_path, os.path.join(args.output, frame, 'transforms_m.json'))
+        if args.mixdataset:
+            shutil.copy(output_m_json_path, os.path.join(args.output, frame, 'transforms_m.json'))
         if args.point3d:
             point3d_path = os.path.join(args.input, 'colmap', 'sparse',frame,'points3D.txt')
             shutil.copy(point3d_path, os.path.join(args.output, frame, 'points3D.txt'))

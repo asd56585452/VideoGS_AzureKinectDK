@@ -205,12 +205,12 @@ def readCamerasFromTransforms(path, transformsfile, white_background, extension=
             image_name = Path(image_path).stem
 
             image = Image.open(image_path)
-            image = np.array(image)
+            # image = np.array(image)
             # im_data = np.array(image.convert("RGBA"))
             # bg = np.array([1,1,1]) if white_background else np.array([0, 0, 0])
-            norm_data = image / 255.0
+            # norm_data = image / 255.0
             # arr = norm_data[:,:,:3] * norm_data[:, :, 3:4] + bg * (1 - norm_data[:, :, 3:4])
-            image = Image.fromarray(np.array(norm_data*255.0, dtype=np.byte), "RGB")
+            # image = Image.fromarray(np.array(norm_data*255.0, dtype=np.byte), "RGB")
 
 
             # image = Image.open(image_path)
@@ -246,7 +246,7 @@ def readNerfSyntheticInfo(path, white_background, eval, extension=".png", ply_pa
 
     ply_path = os.path.join(path, "points3d.ply")
     txt_path = os.path.join(path, "points3D.txt")
-    if not os.path.exists(ply_path):
+    if not os.path.exists(ply_path) and os.path.exists(txt_path):
         # # Since this data set has no colmap data, we start with random points
         # num_pts = 100_000
         # print(f"Generating random point cloud ({num_pts})...")

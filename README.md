@@ -262,14 +262,14 @@ conda activate videogs
 
 # 路徑相關 (依你的需求修改)
 BASE_DIR="/home/cgvmis418/VideoGS"
-INPUT_BASE_NAME="RUN_HiFi4G_location_9_M_PCD"
-PROCESSED_NAME="RUN_HiFi4G_location_9_M_PCD_process"
-OUTPUT_NAME="RUN_HiFi4G_location_9_M_PCD_process_1"
+INPUT_BASE_NAME="RUN_HiFi4G_location_9_30_T_PCD"
+PROCESSED_NAME="RUN_HiFi4G_location_9_30_T_PCD_process"
+OUTPUT_NAME="RUN_HiFi4G_location_9_30_T_PCD_process_1"
 
 # 參數相關 (依你的需求修改)
 FRAME_START=0
-FRAME_END=420
-GROUP_SIZE=2
+FRAME_END=30
+GROUP_SIZE=10
 INTERVAL=1
 QP=0          # 壓縮品質參數
 CUDA_DEVICE=0  # 其他可能想設成變數的參數
@@ -281,7 +281,7 @@ RESOLUTION=4   # 其他可能想設成變數的參數
 # 1. 預處理 (這裡沒用到新增的參數)
 echo "執行預處理..."
 cd preprocess
-python hifi4g_process.py --input "${BASE_DIR}/datasets/${INPUT_BASE_NAME}" --output "${BASE_DIR}/datasets/${PROCESSED_NAME}" --format418 --point3d
+python hifi4g_process.py --input "${BASE_DIR}/datasets/${INPUT_BASE_NAME}" --output "${BASE_DIR}/datasets/${PROCESSED_NAME}" --format418 --point3d --mixdataset
 cd ..
 
 # 2. 訓練
@@ -296,7 +296,8 @@ python train_sequence.py \
     --interval ${INTERVAL} \
     --group_size ${GROUP_SIZE} \
     --resolution ${RESOLUTION} \
-    --point3d
+    --point3d \
+    --random_background
 
 # 3. 壓縮 - Checkpoint 轉圖片
 echo "執行 Checkpoint 轉圖片..."

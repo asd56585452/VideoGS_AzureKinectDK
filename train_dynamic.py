@@ -112,7 +112,7 @@ def temporal_loss(current_frame_gaussian, last_frame_gaussian):
 
     return loss
 
-def train_rt_network(dataset, scene, pipe, last_model_path, init_model_path, gtp_iter, load_last_rt_model, load_init_rt_model):
+def train_rt_network(dataset, scene, opt, pipe, last_model_path, init_model_path, gtp_iter, load_last_rt_model, load_init_rt_model):
     first_iter = 0
     gaussians = GTPTGaussianModel(dataset.sh_degree)
     # find the last checkpoint
@@ -143,7 +143,7 @@ def train_rt_network(dataset, scene, pipe, last_model_path, init_model_path, gtp
             viewpoint_stack = scene.getTrainCameras().copy()
         viewpoint_cam = viewpoint_stack.pop(randint(0, len(viewpoint_stack)-1))
 
-        bg = background
+        bg = torch.rand((3), device="cuda") if opt.random_background else background
 
         #mix background color
         mix_color_type = os.path.splitext(viewpoint_cam.image_name)[0].split('_')[-1]
@@ -158,7 +158,16 @@ def train_rt_network(dataset, scene, pipe, last_model_path, init_model_path, gtp
         image, viewspace_point_tensor, visibility_filter, radii = render_pkg["render"], render_pkg["viewspace_points"], render_pkg["visibility_filter"], render_pkg["radii"]
 
         # Loss
-        gt_image = viewpoint_cam.original_image.cuda()
+        gt_rgb_channels  = viewpoint_cam.original_image.cuda()
+        if viewpoint_cam.gt_alpha_mask is not None:
+            alpha_to_use_for_gt_compositing = viewpoint_cam.gt_alpha_mask.cuda()
+            # 準備背景色 bg (3,) -> (3, 1, 1) 以進行廣播
+            bg_expanded = bg.view(3, 1, 1)
+            # 進行疊加: alpha * Foreground + (1 - alpha) * Background
+            gt_image = alpha_to_use_for_gt_compositing * gt_rgb_channels + (1 - alpha_to_use_for_gt_compositing) * bg_expanded
+        else:
+            # gt_image_raw 是 RGB 且沒有 Alpha 來源，直接使用 (假設它已包含背景或是不透明的)
+            gt_image = gt_rgb_channels
         Ll1 = l1_loss(image, gt_image)
         loss = (1.0 - lambda_dssim) * Ll1 + lambda_dssim * (1.0 - ssim(image, gt_image))
         loss.backward()
@@ -246,7 +255,16 @@ def finetune(dataset, scene, opt, pipe, last_model_path, testing_iterations, sav
         image, viewspace_point_tensor, visibility_filter, radii = render_pkg["render"], render_pkg["viewspace_points"], render_pkg["visibility_filter"], render_pkg["radii"]
 
         # Loss
-        gt_image = viewpoint_cam.original_image.cuda()
+        gt_rgb_channels  = viewpoint_cam.original_image.cuda()
+        if viewpoint_cam.gt_alpha_mask is not None:
+            alpha_to_use_for_gt_compositing = viewpoint_cam.gt_alpha_mask.cuda()
+            # 準備背景色 bg (3,) -> (3, 1, 1) 以進行廣播
+            bg_expanded = bg.view(3, 1, 1)
+            # 進行疊加: alpha * Foreground + (1 - alpha) * Background
+            gt_image = alpha_to_use_for_gt_compositing * gt_rgb_channels + (1 - alpha_to_use_for_gt_compositing) * bg_expanded
+        else:
+            # gt_image_raw 是 RGB 且沒有 Alpha 來源，直接使用 (假設它已包含背景或是不透明的)
+            gt_image = gt_rgb_channels
         Ll1 = l1_loss(image, gt_image)
         temporal_loss_value = temporal_loss(gaussians, last_gaussians)
         entropy_loss = entropy_regularization_loss(gaussians, last_gaussians)
@@ -327,7 +345,7 @@ def dynamic_training(dataset, opt, pipe, testing_iterations, saving_iterations, 
         last_model_path = os.path.join(dataset.model_path, str(last_frame))
 
         # train rt for the frame using the keyframe model
-        train_rt_network(frame_dataset, scene, pipe, last_model_path, init_model_path, gtp_iterations, load_last_rt_model, load_init_rt_model)
+        train_rt_network(frame_dataset, scene, frame_opt,pipe, last_model_path, init_model_path, gtp_iterations, load_last_rt_model, load_init_rt_model)
 
         # finetune wrapped model
         finetune(frame_dataset, scene, frame_opt, pipe, last_model_path, testing_iterations, saving_iterations, checkpoint_iterations, checkpoint, debug_from)
