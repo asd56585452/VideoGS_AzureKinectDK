@@ -316,6 +316,7 @@ def dynamic_training(dataset, opt, pipe, testing_iterations, saving_iterations, 
     load_init_rt_model = False
 
     testing_iterations = [finetune_iterations]
+    # testing_iterations = range(0,finetune_iterations,100)
 
     # record code
     os.makedirs(os.path.join(dataset.model_path, "record"), exist_ok = True)

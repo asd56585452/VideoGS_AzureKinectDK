@@ -264,7 +264,7 @@ conda activate videogs
 BASE_DIR="/home/cgvmis418/VideoGS"
 INPUT_BASE_NAME="RUN_HiFi4G_location_9_30_T_PCD"
 PROCESSED_NAME="RUN_HiFi4G_location_9_30_T_PCD_process"
-OUTPUT_NAME="RUN_HiFi4G_location_9_30_T_PCD_process_1"
+OUTPUT_NAME="RUN_HiFi4G_location_9_30_T_PCD_process_10"
 
 # 參數相關 (依你的需求修改)
 FRAME_START=0
