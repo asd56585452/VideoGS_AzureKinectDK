@@ -264,7 +264,7 @@ conda activate videogs
 BASE_DIR="/home/cgvmis418/VideoGS"
 INPUT_BASE_NAME="RUN_HiFi4G_location_9_30_T_PCD"
 PROCESSED_NAME="RUN_HiFi4G_location_9_30_T_PCD_process"
-OUTPUT_NAME="RUN_HiFi4G_location_9_30_T_PCD_process_10"
+OUTPUT_NAME="RUN_HiFi4G_location_9_30_T_PCD_process_2"
 
 # 參數相關 (依你的需求修改)
 FRAME_START=0
@@ -275,7 +275,7 @@ QP=0          # 壓縮品質參數
 CUDA_DEVICE=0  # 其他可能想設成變數的參數
 SH_DEGREE=0    # 其他可能想設成變數的參數
 RESOLUTION=4   # 其他可能想設成變數的參數
-
+ 
 # --- 使用變數執行你的指令 ---
 
 # 1. 預處理 (這裡沒用到新增的參數)
@@ -330,6 +330,7 @@ sudo cp -r "${BASE_DIR}/output/${OUTPUT_NAME}/feature_video/png_all_${QP}" "/var
 echo "執行 Viewer..."
 cd ../VideoGS_SIBR_viewers
 # 編譯
+cmake -Bbuild . -DCMAKE_BUILD_TYPE=Release # add -G Ninja to build faster
 cmake --build build -j24 --target install
 # 假設編譯已完成
 ./install/bin/SIBR_gaussianViewer_app -m "${BASE_DIR}/output/${OUTPUT_NAME}/checkpoint/0"

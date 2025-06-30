@@ -39,6 +39,7 @@ if __name__ == '__main__':
     max_retries = 3 # 設定最大重試次數
     retry_delay = 5
     psnrs = []
+    psnrs_framelast = []
     start_time = time.time()
 
     # neus2_meshlab_filter_path = os.path.join(data_root_path, "luoxi_filter.mlx")
@@ -97,32 +98,33 @@ if __name__ == '__main__':
             first_frame_iteration = 12000
             first_frame_save_iterations = first_frame_iteration
             first_frame_test_iteration = ""
-            # for i in range(0,first_frame_iteration,100):
-            #     first_frame_test_iteration = first_frame_test_iteration + f"{i} "
+            for i in range(0,first_frame_iteration+1,100):
+                first_frame_test_iteration = first_frame_test_iteration + f"{i} "
             first_gaussian_command = f"CUDA_VISIBLE_DEVICES={card_id} python train.py -s {frame_path} -m {frame_model_path} --iterations {first_frame_iteration} --save_iterations {first_frame_save_iterations} --sh_degree {sh} -r {resolution_scale} --port 600{card_id}"
             if first_frame_test_iteration !="":
                 first_gaussian_command = first_gaussian_command+f" --test_iterations {first_frame_test_iteration}"
             if args.random_background:
                 first_gaussian_command = first_gaussian_command+" --random_background"
-            os.system(first_gaussian_command)
-            # process = subprocess.run(first_gaussian_command,
-            #                                 shell=True,
-            #                                 capture_output=True,
-            #                                 text=True,
-            #                                 check=False)
-            # stdout = process.stdout
-            # psnr_matches = re.findall(r"PSNR\s+(\d+\.?\d*)", stdout)
-            # for psnr_match in psnr_matches:
-            #     psnr_value = float(psnr_match)
-            #     psnrs.append(psnr_value)
-            # print(stdout if stdout else "<無標準輸出>")
+            # os.system(first_gaussian_command)
+            process = subprocess.run(first_gaussian_command,
+                                            shell=True,
+                                            capture_output=True,
+                                            text=True,
+                                            check=False)
+            stdout = process.stdout
+            psnr_matches = re.findall(r"PSNR\s+(\d+\.?\d*)", stdout)
+            for psnr_match in psnr_matches:
+                psnr_value = float(psnr_match)
+                psnrs.append(psnr_value)
+            print(stdout if stdout else "<無標準輸出>")
+            psnrs_framelast.append(psnrs[-1])
 
             # prune
             prune_iterations = 4000
-            prune_percentage = 0.1
+            prune_percentage = 0.0
             prune_test_iterations = f"{prune_iterations}"
-            # for i in range(0,prune_iterations,100):
-            #     prune_test_iterations = prune_test_iterations + f"{i} "
+            for i in range(0,prune_iterations+1,100):
+                prune_test_iterations = prune_test_iterations + f"{i} "
             prune_gaussian_command = f"CUDA_VISIBLE_DEVICES={card_id} python prune_gaussian.py -s {frame_path} -m {frame_model_path} --sh_degree {sh} -r {resolution_scale} --iterations {prune_iterations} --prune_percentage {prune_percentage}"
             if prune_test_iterations != "":
                 prune_gaussian_command = prune_gaussian_command+f" --test_iterations {prune_test_iterations}" 
@@ -139,6 +141,7 @@ if __name__ == '__main__':
             for psnr_match in psnr_matches:
                 psnr_value = float(psnr_match)
                 psnrs.append(psnr_value)
+            psnrs_framelast.append(psnrs[-1])
             print(stdout if stdout else "<無標準輸出>")
 
             # rest frame
@@ -217,6 +220,7 @@ if __name__ == '__main__':
                         for psnr_match in psnr_matches:
                             psnr_value = float(psnr_match)
                             psnrs.append(psnr_value)
+                        psnrs_framelast.append(psnrs[-1])
 
                         # --- 輸出成功執行的完整結果 ---
                         print("\n--- 命令成功執行結果 ---")
@@ -283,5 +287,5 @@ if __name__ == '__main__':
 
             print(f"Finish {group_start} to {group_end}")
     
-    print(f"花費時間:{time.time()-start_time}秒，平均psnr:{ np.mean(psnrs)}")
+    print(f"花費時間:{time.time()-start_time}秒，平均psnr:{ np.mean(psnrs_framelast)}")
     print(psnrs)
