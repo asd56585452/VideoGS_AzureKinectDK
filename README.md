@@ -261,10 +261,10 @@ conda activate videogs
 
 
 # 路徑相關 (依你的需求修改)
-BASE_DIR="/home/cgvmis418/VideoGS"
-INPUT_BASE_NAME="RUN_HiFi4G_location_9_30_T_PCD"
-PROCESSED_NAME="RUN_HiFi4G_location_9_30_T_PCD_process"
-OUTPUT_NAME="RUN_HiFi4G_location_9_30_T_PCD_process_2"
+BASE_DIR="/media/cgvmis418/新增磁碟區/2025-04-23_08-55-45"
+INPUT_BASE_NAME="RUN_100"
+PROCESSED_NAME="RUN_100_process"
+OUTPUT_NAME="RUN_100_process_output"
 
 # 參數相關 (依你的需求修改)
 FRAME_START=0
@@ -280,9 +280,61 @@ RESOLUTION=4   # 其他可能想設成變數的參數
 
 # 1. 預處理 (這裡沒用到新增的參數)
 echo "執行預處理..."
+cp -r "${BASE_DIR}/${INPUT_BASE_NAME}/colmap/sparse/0/." "${BASE_DIR}/${INPUT_BASE_NAME}/colmap/sparse/"
 cd preprocess
-python hifi4g_process.py --input "${BASE_DIR}/datasets/${INPUT_BASE_NAME}" --output "${BASE_DIR}/datasets/${PROCESSED_NAME}" --format418 --point3d --mixdataset
+python hifi4g_process.py --input "${BASE_DIR}/${INPUT_BASE_NAME}" --output "${BASE_DIR}/${PROCESSED_NAME}" --format418 --point3d 
 cd ..
+
+# 1.5 優化外參（可選）
+conda activate nerfstudio
+
+cd ../nerfstudio
+
+colmap model_converter     --input_path "${BASE_DIR}/${INPUT_BASE_NAME}/colmap/sparse/0"   \
+--output_path "${BASE_DIR}/${INPUT_BASE_NAME}/colmap/sparse/0"     --output_type BIN
+
+ns-process-data images \
+--data "${BASE_DIR}/${INPUT_BASE_NAME}/image_undistortion_white/0" \
+--output-dir "${BASE_DIR}/${INPUT_BASE_NAME}/nerfstudio_data/0" \
+--colmap-model-path "${BASE_DIR}/${INPUT_BASE_NAME}/colmap/sparse/0" \
+--verbose --skip-colmap
+
+ns-train splatfacto \
+--data "${BASE_DIR}/${INPUT_BASE_NAME}/nerfstudio_data/0" \
+--pipeline.model.sh-degree 0 \
+--pipeline.model.camera-optimizer.mode SO3xR3 \
+--output-dir "${BASE_DIR}/${INPUT_BASE_NAME}/splat_projects" \
+--experiment-name "fix-exmatrix" \
+--timestamp "latest" \
+nerfstudio-data \
+--downscale-factor 1 \
+--eval-mode all 
+
+ns-export cameras --load-config "${BASE_DIR}/${INPUT_BASE_NAME}/splat_projects/fix-exmatrix/splatfacto/latest/config.yml" \
+--output-dir "${BASE_DIR}/${INPUT_BASE_NAME}/splat_projects/fix-exmatrix/splatfacto/latest"
+
+cd ../VideoGS_AzureKinectDK
+
+python process_poses.py restore \
+    --dataparser-transforms "${BASE_DIR}/${INPUT_BASE_NAME}/splat_projects/fix-exmatrix/splatfacto/latest/dataparser_transforms.json" \
+    --transforms-train "${BASE_DIR}/${INPUT_BASE_NAME}/splat_projects/fix-exmatrix/splatfacto/latest/transforms_train.json" \
+    --output "${BASE_DIR}/${INPUT_BASE_NAME}/splat_projects/fix-exmatrix/splatfacto/latest/restored_poses.json"
+
+python process_poses.py update-nerfstudio \
+    --restored-poses "${BASE_DIR}/${INPUT_BASE_NAME}/splat_projects/fix-exmatrix/splatfacto/latest/restored_poses.json" \
+    --target-transforms "${BASE_DIR}/${INPUT_BASE_NAME}/nerfstudio_data/0/transforms.json" \
+    --output "${BASE_DIR}/${INPUT_BASE_NAME}/nerfstudio_data/0/updated_ns_transforms.json"
+
+python process_poses.py update-videogs \
+    --source-transforms "${BASE_DIR}/${INPUT_BASE_NAME}/nerfstudio_data/0/updated_ns_transforms.json" \
+    --target-transforms "${BASE_DIR}/${PROCESSED_NAME}/transforms.json" \
+    --output "${BASE_DIR}/${PROCESSED_NAME}/transforms.json"
+
+python process_poses.py distribute \
+    --source-file "${BASE_DIR}/${PROCESSED_NAME}/transforms.json" \
+    --target-dir "${BASE_DIR}/${PROCESSED_NAME}"
+
+conda activate videogs
 
 # 2. 訓練
 echo "執行訓練..."
@@ -290,8 +342,8 @@ python train_sequence.py \
     --start ${FRAME_START} \
     --end ${FRAME_END} \
     --cuda ${CUDA_DEVICE} \
-    --data "${BASE_DIR}/datasets/${PROCESSED_NAME}" \
-    --output "${BASE_DIR}/output/${OUTPUT_NAME}" \
+    --data "${BASE_DIR}/${PROCESSED_NAME}" \
+    --output "${BASE_DIR}/${OUTPUT_NAME}" \
     --sh ${SH_DEGREE} \
     --interval ${INTERVAL} \
     --group_size ${GROUP_SIZE} \
@@ -307,8 +359,8 @@ python compress_ckpt_2_image_precompute.py \
     --frame_end ${FRAME_END} \
     --group_size ${GROUP_SIZE} \
     --interval ${INTERVAL} \
-    --ply_path "${BASE_DIR}/output/${OUTPUT_NAME}/checkpoint/" \
-    --output_folder "${BASE_DIR}/output/${OUTPUT_NAME}/feature_image" \
+    --ply_path "${BASE_DIR}/${OUTPUT_NAME}/checkpoint/" \
+    --output_folder "${BASE_DIR}/${OUTPUT_NAME}/feature_image" \
     --sh_degree ${SH_DEGREE}
 
 # 4. 壓縮 - 圖片轉影片
@@ -317,23 +369,23 @@ python compress_image_2_video.py \
     --frame_start ${FRAME_START} \
     --frame_end ${FRAME_END} \
     --group_size ${GROUP_SIZE} \
-    --output_path "${BASE_DIR}/output/${OUTPUT_NAME}" \
+    --output_path "${BASE_DIR}/${OUTPUT_NAME}" \
     --qp ${QP}
 
-# 5. 複製結果
+# 5. 複製結果 (須根據VideoGS_SIBR_viewer設定)
 echo "複製結果到網頁伺服器..."
 # 注意這裡路徑中也使用了 $QP 變數
 sudo rm -r "/var/www/html/files/${OUTPUT_NAME}_feature_video_png_all_${QP}"
-sudo cp -r "${BASE_DIR}/output/${OUTPUT_NAME}/feature_video/png_all_${QP}" "/var/www/html/files/${OUTPUT_NAME}_feature_video_png_all_${QP}"
+sudo cp -r "${BASE_DIR}/${OUTPUT_NAME}/feature_video/png_all_${QP}" "/var/www/html/files/${OUTPUT_NAME}_feature_video_png_all_${QP}"
 
-# 6. 執行 Viewer (這裡沒用到新增的參數)
+# 6. 執行 Viewer (須根據VideoGS_SIBR_viewer設定)
 echo "執行 Viewer..."
 cd ../VideoGS_SIBR_viewers
 # 編譯
 cmake -Bbuild . -DCMAKE_BUILD_TYPE=Release # add -G Ninja to build faster
 cmake --build build -j24 --target install
 # 假設編譯已完成
-./install/bin/SIBR_gaussianViewer_app -m "${BASE_DIR}/output/${OUTPUT_NAME}/checkpoint/0"
+./install/bin/SIBR_gaussianViewer_app -m "${BASE_DIR}/${OUTPUT_NAME}/checkpoint/0"
 cd ..
 
 echo "指令執行完畢。"
