@@ -25,7 +25,7 @@ First, install PyTorch. Our code was evaluated on **CUDA 11.6** and **PyTorch 1.
 
 ```bash
 # Example installation for CUDA 11.6
-pip install torch==1.13.1+cu116 torchvision==0.14.1+cu116 torchaudio==0.13.1 --extra-index-url https://download.pytorch.org/whl/cu116
+conda install pytorch==2.4.1 torchvision==0.19.1 torchaudio==2.4.1 pytorch-cuda=12.4 -c pytorch -c nvidia
 ```
 
 ### 1.3. Python Dependencies
@@ -93,19 +93,19 @@ OUTPUT_NAME="training_output"
 
 # --- Parameters (modify for your project) ---
 FRAME_START=0
-FRAME_END=300
-GROUP_SIZE=30
+FRAME_END=100
+GROUP_SIZE=10
 INTERVAL=1
 RESOLUTION=4   # 1=Full, 2=Half, 4=Quarter, 8=Eighth
 SH_DEGREE=0
-QP=25          # Video compression quality (lower is higher quality)
+QP=0          # Video compression quality (lower is higher quality)
 CUDA_DEVICE=0
 ```
 
 ### 2.2. Step 1: Preprocess the Dataset
-This step converts your raw data (e.g., from the HiFi4G format) into the format required by our trainer. The `hifi4g_process.py` script handles this conversion.
+This step converts your raw data (e.g., from the 418 studio format) into the format required by our trainer. The `hifi4g_process.py` script handles this conversion.
 
-The `--point3d` flag is used when your dataset provides an initial `points3D.bin` file from COLMAP.
+The `--point3d` flag is used when your dataset provides an initial `points3D.txt` file from depth camera.
 
 ```bash
 echo "Step 1: Running preprocessing..."
@@ -113,7 +113,7 @@ cd preprocess
 python hifi4g_process.py \
     --input "${BASE_DIR}/${INPUT_NAME}" \
     --output "${BASE_DIR}/${PROCESSED_NAME}" \
-    --point3d
+    --format418 --point3d 
 cd ..
 ```
 
