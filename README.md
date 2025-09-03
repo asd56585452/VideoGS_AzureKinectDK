@@ -44,6 +44,7 @@ This project relies on several external tools for a full workflow.
 [Nerfstudio](https://docs.nerf.studio/en/latest/index.html) is used for robust camera pose estimation, which is crucial for high-quality results.
 
 ```bash
+cd nerfstudio
 pip install nerfstudio
 ```
 
@@ -85,21 +86,22 @@ First, define the base paths and parameters for your project.
 # Activate the correct conda environment
 conda activate videogs
 
-# --- Path variables (modify for your project) ---
-BASE_DIR="/path/to/your/project"
-INPUT_NAME="raw_data"
-PROCESSED_NAME="processed_data"
-OUTPUT_NAME="training_output"
+cd VideoGS_AzureKinectDK
+# 路徑相關 (依你的需求修改)
+BASE_DIR="/media/cgvmis418/新增磁碟區/2025-04-23_08-55-45"
+INPUT_BASE_NAME="RUN_100"
+PROCESSED_NAME="RUN_100_process"
+OUTPUT_NAME="RUN_100_process_output"
 
-# --- Parameters (modify for your project) ---
+# 參數相關 (依你的需求修改)
 FRAME_START=0
-FRAME_END=100
+FRAME_END=30
 GROUP_SIZE=10
 INTERVAL=1
-RESOLUTION=4   # 1=Full, 2=Half, 4=Quarter, 8=Eighth
-SH_DEGREE=0
-QP=0          # Video compression quality (lower is higher quality)
-CUDA_DEVICE=0
+QP=0          # 壓縮品質參數
+CUDA_DEVICE=0  # 其他可能想設成變數的參數
+SH_DEGREE=0    # 其他可能想設成變數的參數
+RESOLUTION=4   # 其他可能想設成變數的參數
 ```
 
 ### 2.2. Step 1: Preprocess the Dataset
@@ -109,11 +111,9 @@ The `--point3d` flag is used when your dataset provides an initial `points3D.txt
 
 ```bash
 echo "Step 1: Running preprocessing..."
+cp -r "${BASE_DIR}/${INPUT_BASE_NAME}/colmap/sparse/0/." "${BASE_DIR}/${INPUT_BASE_NAME}/colmap/sparse/"
 cd preprocess
-python hifi4g_process.py \
-    --input "${BASE_DIR}/${INPUT_NAME}" \
-    --output "${BASE_DIR}/${PROCESSED_NAME}" \
-    --format418 --point3d 
+python hifi4g_process.py --input "${BASE_DIR}/${INPUT_BASE_NAME}" --output "${BASE_DIR}/${PROCESSED_NAME}" --format418 --point3d 
 cd ..
 ```
 
@@ -125,6 +125,8 @@ This process requires the `nerfstudio` environment.
 
 ```bash
 conda activate nerfstudio
+
+cd ../nerfstudio
 ```
 
 **2.3.2. Run Nerfstudio Pose Optimization**
@@ -132,32 +134,31 @@ This involves processing the data, training a temporary `splatfacto` model with 
 
 ```bash
 # Convert COLMAP model to the required format
-colmap model_converter \
-    --input_path "${BASE_DIR}/${INPUT_NAME}/colmap/sparse/0" \
-    --output_path "${BASE_DIR}/${INPUT_NAME}/colmap/sparse/0" \
-    --output_type BIN
+colmap model_converter     --input_path "${BASE_DIR}/${INPUT_BASE_NAME}/colmap/sparse/0"   \
+--output_path "${BASE_DIR}/${INPUT_BASE_NAME}/colmap/sparse/0"     --output_type BIN
 
 # Process data for Nerfstudio
 ns-process-data images \
-    --data "${BASE_DIR}/${INPUT_NAME}/image_undistortion_white/0" \
-    --output-dir "${BASE_DIR}/${INPUT_NAME}/nerfstudio_data/0" \
-    --colmap-model-path "${BASE_DIR}/${INPUT_NAME}/colmap/sparse/0" \
-    --verbose --skip-colmap
+--data "${BASE_DIR}/${INPUT_BASE_NAME}/image_undistortion_white/0" \
+--output-dir "${BASE_DIR}/${INPUT_BASE_NAME}/nerfstudio_data/0" \
+--colmap-model-path "${BASE_DIR}/${INPUT_BASE_NAME}/colmap/sparse/0" \
+--verbose --skip-colmap
 
 # Train splatfacto to optimize cameras
 ns-train splatfacto \
-    --data "${BASE_DIR}/${INPUT_NAME}/nerfstudio_data/0" \
-    --output-dir "${BASE_DIR}/${INPUT_NAME}/splat_projects" \
-    --experiment-name "fix-exmatrix" \
-    --pipeline.model.camera-optimizer.mode SO3xR3 \
-    --vis wandb \
-    --timestamp "latest" \
-    nerfstudio-data --downscale-factor 1 --eval-mode all
+--data "${BASE_DIR}/${INPUT_BASE_NAME}/nerfstudio_data/0" \
+--pipeline.model.sh-degree 0 \
+--pipeline.model.camera-optimizer.mode SO3xR3 \
+--output-dir "${BASE_DIR}/${INPUT_BASE_NAME}/splat_projects" \
+--experiment-name "fix-exmatrix" \
+--timestamp "latest" \
+nerfstudio-data \
+--downscale-factor 1 \
+--eval-mode all 
 
 # Export the optimized cameras
-ns-export cameras \
-    --load-config "${BASE_DIR}/${INPUT_NAME}/splat_projects/fix-exmatrix/splatfacto/latest/config.yml" \
-    --output-dir "${BASE_DIR}/${INPUT_NAME}/splat_projects/fix-exmatrix/splatfacto/latest"
+ns-export cameras --load-config "${BASE_DIR}/${INPUT_BASE_NAME}/splat_projects/fix-exmatrix/splatfacto/latest/config.yml" \
+--output-dir "${BASE_DIR}/${INPUT_BASE_NAME}/splat_projects/fix-exmatrix/splatfacto/latest"
 ```
 
 **2.3.3. Apply Optimized Poses to VideoGS Dataset**
@@ -167,14 +168,21 @@ The `process_poses.py` script converts the exported Nerfstudio poses back into t
 # Activate your project environment again
 conda activate videogs
 
+cd ../VideoGS_AzureKinectDK
+
 # Restore, update, and distribute the new poses
 python process_poses.py restore \
-    --dataparser-transforms "${BASE_DIR}/${INPUT_NAME}/splat_projects/fix-exmatrix/splatfacto/latest/dataparser_transforms.json" \
-    --transforms-train "${BASE_DIR}/${INPUT_NAME}/splat_projects/fix-exmatrix/splatfacto/latest/transforms_train.json" \
-    --output "${BASE_DIR}/${INPUT_NAME}/splat_projects/fix-exmatrix/splatfacto/latest/restored_poses.json"
+    --dataparser-transforms "${BASE_DIR}/${INPUT_BASE_NAME}/splat_projects/fix-exmatrix/splatfacto/latest/dataparser_transforms.json" \
+    --transforms-train "${BASE_DIR}/${INPUT_BASE_NAME}/splat_projects/fix-exmatrix/splatfacto/latest/transforms_train.json" \
+    --output "${BASE_DIR}/${INPUT_BASE_NAME}/splat_projects/fix-exmatrix/splatfacto/latest/restored_poses.json"
+
+python process_poses.py update-nerfstudio \
+    --restored-poses "${BASE_DIR}/${INPUT_BASE_NAME}/splat_projects/fix-exmatrix/splatfacto/latest/restored_poses.json" \
+    --target-transforms "${BASE_DIR}/${INPUT_BASE_NAME}/nerfstudio_data/0/transforms.json" \
+    --output "${BASE_DIR}/${INPUT_BASE_NAME}/nerfstudio_data/0/updated_ns_transforms.json"
 
 python process_poses.py update-videogs \
-    --source-transforms "${BASE_DIR}/${INPUT_NAME}/nerfstudio_data/0/transforms.json" \
+    --source-transforms "${BASE_DIR}/${INPUT_BASE_NAME}/nerfstudio_data/0/updated_ns_transforms.json" \
     --target-transforms "${BASE_DIR}/${PROCESSED_NAME}/transforms.json" \
     --output "${BASE_DIR}/${PROCESSED_NAME}/transforms.json"
 
@@ -244,8 +252,8 @@ For web-based viewing, you need to host the `feature_video` directory on a web s
 ```bash
 echo "Step 5.1: Copying results to web server..."
 # Example: Copying to a local Nginx server directory
-sudo rm -rf "/var/www/html/files/${OUTPUT_NAME}_feature_video"
-sudo cp -r "${BASE_DIR}/${OUTPUT_NAME}/feature_video" "/var/www/html/files/${OUTPUT_NAME}_feature_video"
+sudo rm -r "/var/www/html/files/${OUTPUT_NAME}_feature_video_png_all_${QP}"
+sudo cp -r "${BASE_DIR}/${OUTPUT_NAME}/feature_video/png_all_${QP}" "/var/www/html/files/${OUTPUT_NAME}_feature_video_png_all_${QP}"
 ```
 
 **2.6.2. Run the SIBR Viewer**
@@ -254,6 +262,8 @@ Launch the viewer, pointing it to the checkpoint of the first frame you want to 
 ```bash
 echo "Step 5.2: Launching SIBR Viewer..."
 cd VideoGS_SIBR_viewers
+cmake -Bbuild . -DCMAKE_BUILD_TYPE=Release # add -G Ninja to build faster
+cmake --build build -j24 --target install
 ./install/bin/SIBR_gaussianViewer_app -m "${BASE_DIR}/${OUTPUT_NAME}/checkpoint/0"
 cd ..
 ```
