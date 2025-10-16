@@ -88,15 +88,15 @@ conda activate videogs
 
 cd VideoGS_AzureKinectDK
 # 路徑相關 (依你的需求修改)
-BASE_DIR="/media/cgvmis418/新增磁碟區/2025-04-23_08-55-45"
-INPUT_BASE_NAME="RUN_100"
-PROCESSED_NAME="RUN_100_process"
-OUTPUT_NAME="RUN_100_process_output"
+BASE_DIR="/mnt/d/2025-10-16_02-42-13"
+INPUT_BASE_NAME="dance"
+PROCESSED_NAME="dance_process_wsl"
+OUTPUT_NAME="dance_process_wsl_output_30_GROUP_SIZE"
 
 # 參數相關 (依你的需求修改)
 FRAME_START=0
 FRAME_END=30
-GROUP_SIZE=10
+GROUP_SIZE=30
 INTERVAL=1
 QP=0          # 壓縮品質參數
 CUDA_DEVICE=0  # 其他可能想設成變數的參數
