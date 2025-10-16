@@ -22,6 +22,8 @@ if __name__ == '__main__':
     parser.add_argument('--interval', type=str, default='')
     parser.add_argument('--group_size', type=str, default='')
     parser.add_argument('--resolution', type=int, default=2)
+    parser.add_argument('--first_frame_iteration', type=int, default=12000)
+    parser.add_argument('--prune_iterations', type=int, default=4000)
     parser.add_argument('--point3d', action="store_true", help='If use pcd as init')
     parser.add_argument('--random_background', action="store_true", help='If random_background as init')
     args = parser.parse_args()
@@ -36,6 +38,8 @@ if __name__ == '__main__':
     interval = int(args.interval)
     group_size = int(args.group_size)
     resolution_scale = int(args.resolution)
+    first_frame_iteration = int(args.first_frame_iteration)
+    prune_iterations = int(args.prune_iterations)
     max_retries = 3 # 設定最大重試次數
     retry_delay = 5
     psnrs = []
@@ -95,7 +99,7 @@ if __name__ == '__main__':
             """ Gaussian """
             # generate output
             frame_model_path = os.path.join(gaussian_output_path, str(i))
-            first_frame_iteration = 12000
+            # first_frame_iteration = 12000
             first_frame_save_iterations = first_frame_iteration
             first_frame_test_iteration = ""
             for i in range(0,first_frame_iteration+1,100):
@@ -120,7 +124,7 @@ if __name__ == '__main__':
             psnrs_framelast.append(psnrs[-1])
 
             # prune
-            prune_iterations = 4000
+            # prune_iterations = 4000
             prune_percentage = 0.0
             prune_test_iterations = f"{prune_iterations}"
             for i in range(0,prune_iterations+1,100):
