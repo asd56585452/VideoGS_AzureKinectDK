@@ -24,6 +24,7 @@ if __name__ == '__main__':
     parser.add_argument('--resolution', type=int, default=2)
     parser.add_argument('--first_frame_iteration', type=int, default=12000)
     parser.add_argument('--prune_iterations', type=int, default=4000)
+    parser.add_argument("--finetune_iterations", nargs="+", type=int, default=2_000)
     parser.add_argument('--point3d', action="store_true", help='If use pcd as init')
     parser.add_argument('--random_background', action="store_true", help='If random_background as init')
     args = parser.parse_args()
@@ -40,6 +41,7 @@ if __name__ == '__main__':
     resolution_scale = int(args.resolution)
     first_frame_iteration = int(args.first_frame_iteration)
     prune_iterations = int(args.prune_iterations)
+    finetune_iterations = int(args.finetune_iterations)
     max_retries = 3 # 設定最大重試次數
     retry_delay = 5
     psnrs = []
@@ -102,191 +104,191 @@ if __name__ == '__main__':
             # first_frame_iteration = 12000
             first_frame_save_iterations = first_frame_iteration
             first_frame_test_iteration = ""
-            for i in range(0,first_frame_iteration+1,100):
+            for i in range(0,first_frame_iteration+1,1000):
                 first_frame_test_iteration = first_frame_test_iteration + f"{i} "
             first_gaussian_command = f"CUDA_VISIBLE_DEVICES={card_id} python train.py -s {frame_path} -m {frame_model_path} --iterations {first_frame_iteration} --save_iterations {first_frame_save_iterations} --sh_degree {sh} -r {resolution_scale} --port 600{card_id}"
             if first_frame_test_iteration !="":
                 first_gaussian_command = first_gaussian_command+f" --test_iterations {first_frame_test_iteration}"
             if args.random_background:
                 first_gaussian_command = first_gaussian_command+" --random_background"
-            # os.system(first_gaussian_command)
-            process = subprocess.run(first_gaussian_command,
-                                            shell=True,
-                                            capture_output=True,
-                                            text=True,
-                                            check=False)
-            stdout = process.stdout
-            psnr_matches = re.findall(r"PSNR\s+(\d+\.?\d*)", stdout)
-            for psnr_match in psnr_matches:
-                psnr_value = float(psnr_match)
-                psnrs.append(psnr_value)
-            print(stdout if stdout else "<無標準輸出>")
-            psnrs_framelast.append(psnrs[-1])
+            os.system(first_gaussian_command)
+            # process = subprocess.run(first_gaussian_command,
+            #                                 shell=True,
+            #                                 capture_output=True,
+            #                                 text=True,
+            #                                 check=False)
+            # stdout = process.stdout
+            # psnr_matches = re.findall(r"PSNR\s+(\d+\.?\d*)", stdout)
+            # for psnr_match in psnr_matches:
+            #     psnr_value = float(psnr_match)
+            #     psnrs.append(psnr_value)
+            # print(stdout if stdout else "<無標準輸出>")
+            # psnrs_framelast.append(psnrs[-1])
 
             # prune
             # prune_iterations = 4000
             prune_percentage = 0.0
             prune_test_iterations = f"{prune_iterations}"
-            for i in range(0,prune_iterations+1,100):
-                prune_test_iterations = prune_test_iterations + f"{i} "
+            # for i in range(0,prune_iterations+1,100):
+            #     prune_test_iterations = prune_test_iterations + f"{i} "
             prune_gaussian_command = f"CUDA_VISIBLE_DEVICES={card_id} python prune_gaussian.py -s {frame_path} -m {frame_model_path} --sh_degree {sh} -r {resolution_scale} --iterations {prune_iterations} --prune_percentage {prune_percentage}"
             if prune_test_iterations != "":
                 prune_gaussian_command = prune_gaussian_command+f" --test_iterations {prune_test_iterations}" 
             if args.random_background:
                 prune_gaussian_command = prune_gaussian_command+" --random_background"
-            # os.system(prune_gaussian_command)
-            process = subprocess.run(prune_gaussian_command,
-                                            shell=True,
-                                            capture_output=True,
-                                            text=True,
-                                            check=False)
-            stdout = process.stdout
-            psnr_matches = re.findall(r"PSNR\s+(\d+\.?\d*)", stdout)
-            for psnr_match in psnr_matches:
-                psnr_value = float(psnr_match)
-                psnrs.append(psnr_value)
-            psnrs_framelast.append(psnrs[-1])
-            print(stdout if stdout else "<無標準輸出>")
+            os.system(prune_gaussian_command)
+            # process = subprocess.run(prune_gaussian_command,
+            #                                 shell=True,
+            #                                 capture_output=True,
+            #                                 text=True,
+            #                                 check=False)
+            # stdout = process.stdout
+            # psnr_matches = re.findall(r"PSNR\s+(\d+\.?\d*)", stdout)
+            # for psnr_match in psnr_matches:
+            #     psnr_value = float(psnr_match)
+            #     psnrs.append(psnr_value)
+            # psnrs_framelast.append(psnrs[-1])
+            # print(stdout if stdout else "<無標準輸出>")
 
             # rest frame
-            dynamic_command = f"CUDA_VISIBLE_DEVICES={card_id} python train_dynamic.py -s {data_root_path} -m {gaussian_output_path} --sh_degree {sh} -r {resolution_scale} --st {group_start} --ed {group_end} --interval {interval}"
+            dynamic_command = f"CUDA_VISIBLE_DEVICES={card_id} python train_dynamic.py -s {data_root_path} -m {gaussian_output_path} --sh_degree {sh} -r {resolution_scale} --st {group_start} --ed {group_end} --interval {interval} --finetune_iterations {finetune_iterations}"
             if args.random_background:
                 dynamic_command = dynamic_command+" --random_background"
-            # os.system(dynamic_command)
-            retries = 0
-            while retries < max_retries:
-                print(f"--- 第 {retries + 1}/{max_retries} 次嘗試 ---")
-                print(f"執行命令: {dynamic_command}")
+            os.system(dynamic_command)
+            # retries = 0
+            # while retries < max_retries:
+            #     print(f"--- 第 {retries + 1}/{max_retries} 次嘗試 ---")
+            #     print(f"執行命令: {dynamic_command}")
 
-                process = None # 初始化 process 變數
-                try:
-                    # 推薦使用 shlex 分割命令
-                    # cmd_list = shlex.split(dynamic_command)
-                    # process = subprocess.run(cmd_list, capture_output=True, text=True, check=False)
+            #     process = None # 初始化 process 變數
+            #     try:
+            #         # 推薦使用 shlex 分割命令
+            #         # cmd_list = shlex.split(dynamic_command)
+            #         # process = subprocess.run(cmd_list, capture_output=True, text=True, check=False)
 
-                    # 或者使用 shell=True (注意安全風險)
-                    process = subprocess.run(dynamic_command,
-                                            shell=True,
-                                            capture_output=True,
-                                            text=True,
-                                            check=False)
+            #         # 或者使用 shell=True (注意安全風險)
+            #         process = subprocess.run(dynamic_command,
+            #                                 shell=True,
+            #                                 capture_output=True,
+            #                                 text=True,
+            #                                 check=False)
 
-                    stdout = process.stdout
-                    stderr = process.stderr
-                    return_code = process.returncode
+            #         stdout = process.stdout
+            #         stderr = process.stderr
+            #         return_code = process.returncode
 
-                    # 先印出每次嘗試的基本資訊 (可選，用於除錯)
-                    print(f"命令返回碼: {return_code}")
-                    print("--- STDOUT (本次嘗試預覽) ---")
-                    print(stdout[:200] + "..." if len(stdout) > 200 else stdout if stdout else "<無標準輸出>") # 預覽部分輸出
-                    print("--- STDERR (本次嘗試預覽) ---")
-                    print(stderr[:200] + "..." if len(stderr) > 200 else stderr if stderr else "<無錯誤輸出>") # 預覽部分錯誤
-                    print("-----------------------------")
-
-
-                    if return_code != 0:
-                        print(f"命令執行失敗，返回碼非零 ({return_code})。")
-
-                    # 條件 1: 檢查是否包含完成字串
-                    completion_string = f"Training frame {group_end} done"
-                    found_completion_string = completion_string in stdout
-                    print(f"檢查完成字串 '{completion_string}': {found_completion_string}")
-
-                    # 條件 2: 檢查 *最後一個* PSNR 是否大於 30
-                    psnr_value = None
-                    psnr_ok = False
-                    psnr_matches = re.findall(r"PSNR\s+(\d+\.?\d*)", stdout)
-
-                    if psnr_matches:
-                        last_psnr_str = psnr_matches[-1]
-                        # (可選) 印出找到的 PSNR 資訊
-                        # print(f"找到的所有 PSNR 值字串: {psnr_matches}")
-                        print(f"使用最後一個 PSNR 值進行檢查: {last_psnr_str}")
-                        try:
-                            psnr_value = float(last_psnr_str)
-                            print(f"轉換後的最後 PSNR 值: {psnr_value}")
-                            if psnr_value > 0:
-                                psnr_ok = True
-                                print("最後 PSNR 檢查通過 (> 30)")
-                            else:
-                                print(f"最後 PSNR 檢查失敗 ({psnr_value} <= 30)")
-                        except ValueError:
-                            print(f"錯誤：無法將找到的最後 PSNR 值字串 '{last_psnr_str}' 轉換為浮點數。")
-                    else:
-                        print("在輸出中未找到任何 'PSNR xxx' 格式的字串。")
-
-                    # 檢查所有條件是否滿足
-                    if return_code == 0 and found_completion_string and psnr_ok:
-                        print("\n========================================")
-                        print("成功：命令執行完成且滿足所有條件。")
-                        print("========================================")
-                        success = True
-                        for psnr_match in psnr_matches:
-                            psnr_value = float(psnr_match)
-                            psnrs.append(psnr_value)
-                        psnrs_framelast.append(psnrs[-1])
-
-                        # --- 輸出成功執行的完整結果 ---
-                        print("\n--- 命令成功執行結果 ---")
-                        print("\n--- STDOUT ---")
-                        print(stdout if stdout else "<無標準輸出>")
-                        # print("\n--- STDERR ---")
-                        # print(stderr if stderr else "<無錯誤輸出>")
-                        # print("\n------------------------")
-                        # --- 結束輸出 ---
-
-                        break # 成功，跳出 while 循環
-
-                    else:
-                        # 條件未滿足，準備重試
-                        print("條件未滿足，準備重試...")
-                        print("\n--- STDERR ---")
-                        print(stderr if stderr else "<無錯誤輸出>")
-                        print("\n------------------------")
-                        # (可以保留之前的詳細失敗原因輸出)
-                        if return_code != 0: print("  - 原因：命令返回碼非零")
-                        if not found_completion_string: print(f"  - 原因：未找到完成字串 '{completion_string}'")
-                        if not psnr_ok:
-                            if psnr_matches:
-                                print(f"  - 原因：最後 PSNR 值 ({psnr_value}) 未 > 30")
-                            else:
-                                print("  - 原因：未找到 PSNR 值")
+            #         # 先印出每次嘗試的基本資訊 (可選，用於除錯)
+            #         print(f"命令返回碼: {return_code}")
+            #         print("--- STDOUT (本次嘗試預覽) ---")
+            #         print(stdout[:200] + "..." if len(stdout) > 200 else stdout if stdout else "<無標準輸出>") # 預覽部分輸出
+            #         print("--- STDERR (本次嘗試預覽) ---")
+            #         print(stderr[:200] + "..." if len(stderr) > 200 else stderr if stderr else "<無錯誤輸出>") # 預覽部分錯誤
+            #         print("-----------------------------")
 
 
-                except FileNotFoundError:
-                    print(f"錯誤：命令 '{dynamic_command.split()[0]}' 不存在或無法執行。")
-                    print("無法重試，請檢查命令。")
-                    break
-                except Exception as e:
-                    print(f"執行命令時發生未預期的錯誤: {e}")
-                    # 檢查 process 是否被賦值，如果命令執行出錯可能為 None
-                    if process:
-                        print("--- STDOUT (錯誤發生時) ---")
-                        print(process.stdout if process.stdout else "<無標準輸出>")
-                        print("--- STDERR (錯誤發生時) ---")
-                        print(process.stderr if process.stderr else "<無錯誤輸出>")
-                    print("準備重試...")
+            #         if return_code != 0:
+            #             print(f"命令執行失敗，返回碼非零 ({return_code})。")
 
-                # 重試前的準備
-                retries += 1
-                if retries < max_retries:
-                    print(f"\n將在 {retry_delay} 秒後重試...")
-                    time.sleep(retry_delay)
-                    print("-" * 30) # 分隔線，讓輸出更清晰
+            #         # 條件 1: 檢查是否包含完成字串
+            #         completion_string = f"Training frame {group_end} done"
+            #         found_completion_string = completion_string in stdout
+            #         print(f"檢查完成字串 '{completion_string}': {found_completion_string}")
 
-            # 循環結束後的操作
-            if not success: # 只有在失敗時才需要額外輸出這個訊息
-                print(f"\n============================================================")
-                print(f"最終結果：達到最大重試次數 ({max_retries})，命令未能成功或滿足條件。")
-                print(f"============================================================")
-                # 如果需要，可以在這裡印出最後一次嘗試的輸出 (如果 process 有被賦值的話)
-                if process:
-                    print("\n--- 最後一次嘗試的輸出 ---")
-                    print("--- STDOUT ---")
-                    print(process.stdout if process.stdout else "<無標準輸出>")
-                    print("--- STDERR ---")
-                    print(process.stderr if process.stderr else "<無錯誤輸出>")
-                    print("-------------------------")
+            #         # 條件 2: 檢查 *最後一個* PSNR 是否大於 30
+            #         psnr_value = None
+            #         psnr_ok = False
+            #         psnr_matches = re.findall(r"PSNR\s+(\d+\.?\d*)", stdout)
+
+            #         if psnr_matches:
+            #             last_psnr_str = psnr_matches[-1]
+            #             # (可選) 印出找到的 PSNR 資訊
+            #             # print(f"找到的所有 PSNR 值字串: {psnr_matches}")
+            #             print(f"使用最後一個 PSNR 值進行檢查: {last_psnr_str}")
+            #             try:
+            #                 psnr_value = float(last_psnr_str)
+            #                 print(f"轉換後的最後 PSNR 值: {psnr_value}")
+            #                 if psnr_value > 0:
+            #                     psnr_ok = True
+            #                     print("最後 PSNR 檢查通過 (> 30)")
+            #                 else:
+            #                     print(f"最後 PSNR 檢查失敗 ({psnr_value} <= 30)")
+            #             except ValueError:
+            #                 print(f"錯誤：無法將找到的最後 PSNR 值字串 '{last_psnr_str}' 轉換為浮點數。")
+            #         else:
+            #             print("在輸出中未找到任何 'PSNR xxx' 格式的字串。")
+
+            #         # 檢查所有條件是否滿足
+            #         if return_code == 0 and found_completion_string and psnr_ok:
+            #             print("\n========================================")
+            #             print("成功：命令執行完成且滿足所有條件。")
+            #             print("========================================")
+            #             success = True
+            #             for psnr_match in psnr_matches:
+            #                 psnr_value = float(psnr_match)
+            #                 psnrs.append(psnr_value)
+            #             psnrs_framelast.append(psnrs[-1])
+
+            #             # --- 輸出成功執行的完整結果 ---
+            #             print("\n--- 命令成功執行結果 ---")
+            #             print("\n--- STDOUT ---")
+            #             print(stdout if stdout else "<無標準輸出>")
+            #             # print("\n--- STDERR ---")
+            #             # print(stderr if stderr else "<無錯誤輸出>")
+            #             # print("\n------------------------")
+            #             # --- 結束輸出 ---
+
+            #             break # 成功，跳出 while 循環
+
+            #         else:
+            #             # 條件未滿足，準備重試
+            #             print("條件未滿足，準備重試...")
+            #             print("\n--- STDERR ---")
+            #             print(stderr if stderr else "<無錯誤輸出>")
+            #             print("\n------------------------")
+            #             # (可以保留之前的詳細失敗原因輸出)
+            #             if return_code != 0: print("  - 原因：命令返回碼非零")
+            #             if not found_completion_string: print(f"  - 原因：未找到完成字串 '{completion_string}'")
+            #             if not psnr_ok:
+            #                 if psnr_matches:
+            #                     print(f"  - 原因：最後 PSNR 值 ({psnr_value}) 未 > 30")
+            #                 else:
+            #                     print("  - 原因：未找到 PSNR 值")
+
+
+            #     except FileNotFoundError:
+            #         print(f"錯誤：命令 '{dynamic_command.split()[0]}' 不存在或無法執行。")
+            #         print("無法重試，請檢查命令。")
+            #         break
+            #     except Exception as e:
+            #         print(f"執行命令時發生未預期的錯誤: {e}")
+            #         # 檢查 process 是否被賦值，如果命令執行出錯可能為 None
+            #         if process:
+            #             print("--- STDOUT (錯誤發生時) ---")
+            #             print(process.stdout if process.stdout else "<無標準輸出>")
+            #             print("--- STDERR (錯誤發生時) ---")
+            #             print(process.stderr if process.stderr else "<無錯誤輸出>")
+            #         print("準備重試...")
+
+            #     # 重試前的準備
+            #     retries += 1
+            #     if retries < max_retries:
+            #         print(f"\n將在 {retry_delay} 秒後重試...")
+            #         time.sleep(retry_delay)
+            #         print("-" * 30) # 分隔線，讓輸出更清晰
+
+            # # 循環結束後的操作
+            # if not success: # 只有在失敗時才需要額外輸出這個訊息
+            #     print(f"\n============================================================")
+            #     print(f"最終結果：達到最大重試次數 ({max_retries})，命令未能成功或滿足條件。")
+            #     print(f"============================================================")
+            #     # 如果需要，可以在這裡印出最後一次嘗試的輸出 (如果 process 有被賦值的話)
+            #     if process:
+            #         print("\n--- 最後一次嘗試的輸出 ---")
+            #         print("--- STDOUT ---")
+            #         print(process.stdout if process.stdout else "<無標準輸出>")
+            #         print("--- STDERR ---")
+            #         print(process.stderr if process.stderr else "<無錯誤輸出>")
+            #         print("-------------------------")
 
 
             print(f"Finish {group_start} to {group_end}")
