@@ -296,7 +296,7 @@ def finetune(dataset, scene, opt, pipe, last_model_path, testing_iterations, sav
         save_pcd_path = os.path.join(dataset.model_path, "point_cloud/iteration_{}".format(iteration))
         gaussians.save_ply(os.path.join(save_pcd_path, "point_cloud.ply"))
 
-def dynamic_training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoint_iterations, checkpoint, debug_from, start_frame, end_frame, interval_frame):
+def dynamic_training(dataset, opt, pipe, testing_iterations, saving_iterations, finetune_iterations, checkpoint_iterations, checkpoint, debug_from, start_frame, end_frame, interval_frame):
 
     if not os.path.exists(dataset.model_path):
         os.makedirs(dataset.model_path)
@@ -311,12 +311,12 @@ def dynamic_training(dataset, opt, pipe, testing_iterations, saving_iterations, 
     gtp_iterations = 800
     # gtp_iterations = 4000
     # finetune_iterations = 3500
-    finetune_iterations = 2000
+    # finetune_iterations = 2000
     load_last_rt_model = False
     load_init_rt_model = False
 
-    # testing_iterations = [finetune_iterations]
-    testing_iterations = range(0,finetune_iterations+1,100)
+    testing_iterations = [finetune_iterations]
+    # testing_iterations = range(0,finetune_iterations+1,100)
 
     # record code
     os.makedirs(os.path.join(dataset.model_path, "record"), exist_ok = True)
@@ -419,6 +419,7 @@ if __name__ == "__main__":
     parser.add_argument('--detect_anomaly', action='store_true', default=False)
     parser.add_argument("--test_iterations", nargs="+", type=int, default=[3_500])
     parser.add_argument("--save_iterations", nargs="+", type=int, default=[3_500])
+    parser.add_argument("--finetune_iterations", nargs="+", type=int, default=[2_000])
     parser.add_argument("--st", type=int, default=0)
     parser.add_argument("--ed", type=int, default=0)
     parser.add_argument("--interval", type=int, default=0)
@@ -439,7 +440,7 @@ if __name__ == "__main__":
 
     print(f"train with keyframe {args.st}")
     print(f"train from frame {args.st + args.interval} to frame {args.ed}")
-    dynamic_training(lp.extract(args), op.extract(args), pp.extract(args), args.test_iterations, args.save_iterations, args.checkpoint_iterations, args.start_checkpoint, args.debug_from, args.st, args.ed, args.interval)
+    dynamic_training(lp.extract(args), op.extract(args), pp.extract(args), args.test_iterations, args.save_iterations,args.finetune_iterations, args.checkpoint_iterations, args.start_checkpoint, args.debug_from, args.st, args.ed, args.interval)
 
     # All done
     print("\nTraining complete.")
