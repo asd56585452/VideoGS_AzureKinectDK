@@ -185,6 +185,7 @@ if __name__ == "__main__":
     parser.add_argument("--quiet", action="store_true")
     parser.add_argument("--checkpoint_iterations", nargs="+", type=int, default=[])
     parser.add_argument("--start_checkpoint", type=str, default = None)
+    parser.add_argument("--last_ckpt_iter", type=int, default=12000)
     parser.add_argument("--prune_percentage", type=float ,default = 0.5)
     args = parser.parse_args(sys.argv[1:])
     args.save_iterations.append(args.iterations)
@@ -198,7 +199,7 @@ if __name__ == "__main__":
 
     # prune percentage
     prune_percentage = args.prune_percentage # 20%
-    last_ckpt_iter = 12000
+    last_ckpt_iter = args.last_ckpt_iter
     # search for the last checkpoint
     pcd_path = os.path.join(args.model_path, "point_cloud")
     last_ckpt_path = os.path.join(pcd_path, "iteration_{}".format(last_ckpt_iter), "point_cloud.ply")
