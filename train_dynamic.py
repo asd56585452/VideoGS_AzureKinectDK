@@ -419,7 +419,7 @@ if __name__ == "__main__":
     parser.add_argument('--detect_anomaly', action='store_true', default=False)
     parser.add_argument("--test_iterations", nargs="+", type=int, default=[3_500])
     parser.add_argument("--save_iterations", nargs="+", type=int, default=[3_500])
-    parser.add_argument("--finetune_iterations", nargs="+", type=int, default=2_000)
+    parser.add_argument("--finetune_iterations", type=int, default=2000)
     parser.add_argument("--st", type=int, default=0)
     parser.add_argument("--ed", type=int, default=0)
     parser.add_argument("--interval", type=int, default=0)
