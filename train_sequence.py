@@ -24,7 +24,7 @@ if __name__ == '__main__':
     parser.add_argument('--resolution', type=int, default=2)
     parser.add_argument('--first_frame_iteration', type=int, default=12000)
     parser.add_argument('--prune_iterations', type=int, default=4000)
-    parser.add_argument("--finetune_iterations", nargs="+", type=int, default=2_000)
+    parser.add_argument('--finetune_iterations', type=int, default=2000)
     parser.add_argument('--point3d', action="store_true", help='If use pcd as init')
     parser.add_argument('--random_background', action="store_true", help='If random_background as init')
     args = parser.parse_args()
