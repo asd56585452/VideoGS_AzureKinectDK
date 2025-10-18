@@ -294,6 +294,7 @@ if __name__ == '__main__':
 
 
             print(f"Finish {group_start} to {group_end}")
+            success = True
     
     print(f"花費時間:{time.time()-start_time}秒，平均psnr:{ np.mean(psnrs_framelast)}")
     print(psnrs)
