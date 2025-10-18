@@ -91,7 +91,7 @@ cd VideoGS_AzureKinectDK
 BASE_DIR="/mnt/d/2025-10-16_02-42-13"
 INPUT_BASE_NAME="dance"
 PROCESSED_NAME="dance_process_wsl"
-OUTPUT_NAME="dance_process_wsl_output_10_GROUP_SIZE_half_iter"
+OUTPUT_NAME="dance_process_wsl_output_10_GROUP_SIZE_real_half_iter"
 
 # 參數相關 (依你的需求修改)
 FRAME_START=0
@@ -208,6 +208,7 @@ python train_sequence.py \
     --resolution ${RESOLUTION} \
     --first_frame_iteration 6000 \
     --prune_iterations 2000 \
+    --finetune_iterations 1000 \
     --point3d \
     --random_background
 ```
