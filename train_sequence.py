@@ -23,6 +23,7 @@ if __name__ == '__main__':
     parser.add_argument('--group_size', type=str, default='')
     parser.add_argument('--resolution', type=int, default=2)
     parser.add_argument('--first_frame_iteration', type=int, default=12000)
+    parser.add_argument('--prune_percentage', type=float, default=0.45)
     parser.add_argument('--prune_iterations', type=int, default=4000)
     parser.add_argument('--finetune_iterations', type=int, default=2000)
     parser.add_argument('--point3d', action="store_true", help='If use pcd as init')
@@ -40,6 +41,7 @@ if __name__ == '__main__':
     group_size = int(args.group_size)
     resolution_scale = int(args.resolution)
     first_frame_iteration = int(args.first_frame_iteration)
+    prune_percentage = float(args.prune_percentage)
     prune_iterations = int(args.prune_iterations)
     finetune_iterations = int(args.finetune_iterations)
     max_retries = 3 # 設定最大重試次數
@@ -127,11 +129,11 @@ if __name__ == '__main__':
 
             # prune
             # prune_iterations = 4000
-            prune_percentage = 0.0
+            # prune_percentage = 0.0
             prune_test_iterations = f"{prune_iterations}"
             # for i in range(0,prune_iterations+1,100):
             #     prune_test_iterations = prune_test_iterations + f"{i} "
-            prune_gaussian_command = f"CUDA_VISIBLE_DEVICES={card_id} python prune_gaussian.py -s {frame_path} -m {frame_model_path} --sh_degree {sh} -r {resolution_scale} --iterations {prune_iterations} --prune_percentage {prune_percentage}"
+            prune_gaussian_command = f"CUDA_VISIBLE_DEVICES={card_id} python prune_gaussian.py -s {frame_path} -m {frame_model_path} --sh_degree {sh} -r {resolution_scale} --iterations {prune_iterations} --prune_percentage {prune_percentage} --last_ckpt_iter {first_frame_iteration}"
             if prune_test_iterations != "":
                 prune_gaussian_command = prune_gaussian_command+f" --test_iterations {prune_test_iterations}" 
             if args.random_background:
