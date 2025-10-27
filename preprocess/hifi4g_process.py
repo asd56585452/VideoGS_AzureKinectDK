@@ -40,13 +40,13 @@ if __name__ == '__main__':
         os.system(colmap2k_cmd)
 
     # move the data
-    images_folder_path = os.path.join(args.input, 'image_undistortion_white')
+    images_folder_path = os.path.join(args.input, 'image')
     frames = os.listdir(images_folder_path)
     frames = natsort.natsorted(frames)
 
     for frame in tqdm(frames):
         frame_source_path = os.path.join(images_folder_path, frame)
-        # frame_source_path = os.path.join(images_folder_path, frame, 'image_undistortion_white', 'images')
+        # frame_source_path = os.path.join(images_folder_path, frame, 'image', 'images')
         frame_target_path = os.path.join(args.output, frame, 'images')
         if args.move:
             shutil.move(frame_source_path, frame_target_path)

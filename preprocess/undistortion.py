@@ -28,5 +28,5 @@ if __name__ == '__main__':
         if not os.path.exists(input_image_path):
             raise Exception(f"Path {input_image_path} does not exist.")
         
-        output_image_path = os.path.join(output_path, str(frame), "image_undistortion_white")
+        output_image_path = os.path.join(output_path, str(frame), "image")
         undistortion(input_image_path, calib_path, output_image_path)

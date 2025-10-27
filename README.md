@@ -88,20 +88,20 @@ conda activate videogs
 
 cd VideoGS_AzureKinectDK
 # 路徑相關 (依你的需求修改)
-BASE_DIR="/mnt/d/2025-10-16_02-42-13"
-INPUT_BASE_NAME="dance"
-PROCESSED_NAME="dance_process_wsl"
-OUTPUT_NAME="dance_process_wsl_output_90_frame_10_GROUP_SIZE_real_half_iter"
+BASE_DIR="/media/cgvmis418/新增磁碟區/2025-10-21_17-56-48"
+INPUT_BASE_NAME="Group4_Test"
+PROCESSED_NAME="Group4_Test_process_ubuntu"
+OUTPUT_NAME="Group4_Test_process_ubuntu_output_10_frame_5_GROUP_SIZE_real_full_iter"
 
 # 參數相關 (依你的需求修改)
 FRAME_START=0
-FRAME_END=90
-GROUP_SIZE=10
+FRAME_END=10
+GROUP_SIZE=5
 INTERVAL=1
 QP=0          # 壓縮品質參數
 CUDA_DEVICE=0  # 其他可能想設成變數的參數
 SH_DEGREE=0    # 其他可能想設成變數的參數
-RESOLUTION=4   # 其他可能想設成變數的參數
+RESOLUTION=1   # 其他可能想設成變數的參數
 ```
 
 ### 2.2. Step 1: Preprocess the Dataset
@@ -139,7 +139,7 @@ colmap model_converter     --input_path "${BASE_DIR}/${INPUT_BASE_NAME}/colmap/s
 
 # Process data for Nerfstudio
 ns-process-data images \
---data "${BASE_DIR}/${INPUT_BASE_NAME}/image_undistortion_white/0" \
+--data "${BASE_DIR}/${INPUT_BASE_NAME}/image/0" \
 --output-dir "${BASE_DIR}/${INPUT_BASE_NAME}/nerfstudio_data/0" \
 --colmap-model-path "${BASE_DIR}/${INPUT_BASE_NAME}/colmap/sparse/0" \
 --verbose --skip-colmap
