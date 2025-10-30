@@ -122,13 +122,11 @@ def update_videogs_transforms(source_transforms_path, target_videoGS_path, outpu
     print("--- 步驟 3: 開始同步姿態到 VideoGS transforms.json ---")
     source_data = load_json(source_transforms_path)
     
-    source_poses_map = {}
+    source_poses = []
     for frame_info in source_data.get("frames", []):
-        if "colmap_im_id" in frame_info and "transform_matrix" in frame_info:
-            key_filename = f"{frame_info['colmap_im_id']}.png"
-            source_poses_map[key_filename] = frame_info["transform_matrix"]
+        source_poses.append(frame_info["transform_matrix"])
 
-    if not source_poses_map:
+    if not source_poses:
         print(f"錯誤：未能從來源檔案 '{source_transforms_path}' 載入任何有效的姿態。")
         return
 
@@ -138,12 +136,8 @@ def update_videogs_transforms(source_transforms_path, target_videoGS_path, outpu
     not_found_frames_log = []
     
     for frame_in_target in target_data.get("frames", []):
-        target_base_filename = os.path.basename(frame_in_target.get("file_path", ""))
-        if target_base_filename in source_poses_map:
-            frame_in_target["transform_matrix"] = source_poses_map[target_base_filename]
-            updated_frames_count += 1
-        else:
-            not_found_frames_log.append(target_base_filename)
+        frame_in_target["transform_matrix"] = source_poses[updated_frames_count]
+        updated_frames_count += 1
 
     if not_found_frames_log:
         print(f"警告：在來源檔案中找不到以下 {len(not_found_frames_log)} 個目標影像的對應姿態：{', '.join(not_found_frames_log)}")

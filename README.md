@@ -88,14 +88,14 @@ conda activate videogs
 
 cd VideoGS_AzureKinectDK
 # 路徑相關 (依你的需求修改)
-BASE_DIR="/media/cgvmis418/新增磁碟區/2025-10-21_17-56-48"
-INPUT_BASE_NAME="Group4_Test"
-PROCESSED_NAME="Group4_Test_process_ubuntu"
-OUTPUT_NAME="Group4_Test_process_ubuntu_output_10_frame_5_GROUP_SIZE_real_full_iter"
+BASE_DIR="/home/cgvmis418/VideoGS_AzureKinectDK"
+INPUT_BASE_NAME="Group2_Pre"
+PROCESSED_NAME="Group2_process_ubuntu"
+OUTPUT_NAME="Group2_process_ubuntu_output_90_frame_5_GROUP_SIZE_real_full_iter_1_scale"
 
 # 參數相關 (依你的需求修改)
 FRAME_START=0
-FRAME_END=10
+FRAME_END=90
 GROUP_SIZE=5
 INTERVAL=1
 QP=0          # 壓縮品質參數
@@ -206,10 +206,10 @@ python train_sequence.py \
     --interval ${INTERVAL} \
     --group_size ${GROUP_SIZE} \
     --resolution ${RESOLUTION} \
-    --first_frame_iteration 6000 \
-    --prune_percentage 0.5 \
-    --prune_iterations 2000 \
-    --finetune_iterations 1000 \
+    --first_frame_iteration 12000 \
+    --prune_percentage 0.0 \
+    --prune_iterations 4000 \
+    --finetune_iterations 2000 \
     --point3d \
     --random_background
 ```

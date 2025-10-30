@@ -106,8 +106,8 @@ if __name__ == '__main__':
             # first_frame_iteration = 12000
             first_frame_save_iterations = first_frame_iteration
             first_frame_test_iteration = ""
-            for i in range(0,first_frame_iteration+1,1000):
-                first_frame_test_iteration = first_frame_test_iteration + f"{i} "
+            # for i in range(0,first_frame_iteration+1,1000):
+            #     first_frame_test_iteration = first_frame_test_iteration + f"{i} "
             first_gaussian_command = f"CUDA_VISIBLE_DEVICES={card_id} python train.py -s {frame_path} -m {frame_model_path} --iterations {first_frame_iteration} --save_iterations {first_frame_save_iterations} --sh_degree {sh} -r {resolution_scale} --port 600{card_id}"
             if first_frame_test_iteration !="":
                 first_gaussian_command = first_gaussian_command+f" --test_iterations {first_frame_test_iteration}"
