@@ -115,8 +115,8 @@ def process_and_save_ply(src_path, dst_path, x_rotation_degrees=-10.0):
 
 # --- 以下是您原始腳本的主要邏輯 ---
 
-BASE = sys.argv[1] if len(sys.argv) > 1 else "/home/cgvmis418/VideoGS_AzureKinectDK/datasets/Group2_process_ubuntu_output_90_frame_5_GROUP_SIZE_real_full_iter_1_scale"
-DEST = sys.argv[2] if len(sys.argv) > 2 else os.path.join(os.path.dirname(BASE), "datasets","supersplate")
+BASE = sys.argv[1] if len(sys.argv) > 1 else "/home/cgvmis418/VideoGS_AzureKinectDK/datasets/Group4_process_ubuntu_output_90_frame_5_GROUP_SIZE_real_full_iter_1_scale"
+DEST = sys.argv[2] if len(sys.argv) > 2 else os.path.join(os.path.dirname(BASE),"supersplate")
 LIMIT = int(sys.argv[3]) if len(sys.argv) > 3 else 90
 
 pattern = re.compile(r".*/checkpoint/(\d+)/point_cloud/iteration_(\d+)/point_cloud\.ply$")
