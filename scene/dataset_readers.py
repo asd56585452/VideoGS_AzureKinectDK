@@ -224,8 +224,8 @@ def readCamerasFromTransforms(path, transformsfile, white_background, extension=
             fy = frame["fl_y"]
             cx = frame["cx"]
             cy = frame["cy"]
-            FovY = focal2fov(fy, image.size[1])
-            FovX = focal2fov(fx, image.size[0])
+            FovY = focal2fov(fy, frame["h"])
+            FovX = focal2fov(fx, frame["w"])
 
             cam_infos.append(CameraInfo(uid=idx, R=R, T=T, FovY=FovY, FovX=FovX, image=image,
                             image_path=image_path, image_name=image_name, width=image.size[0], height=image.size[1]))
@@ -238,7 +238,18 @@ def readNerfSyntheticInfo(path, white_background, eval, extension=".png", ply_pa
     print("Reading Test Transforms")
     # test_cam_infos = readCamerasFromTransforms(path, "transforms_test.json", white_background, extension)
     test_cam_infos = []
-    if not eval:
+    
+    if eval:
+        all_cam_infos = train_cam_infos
+        train_cam_infos = []
+        test_cam_infos = []
+        for idx, cam_info in enumerate(all_cam_infos):
+            if idx % 8 == 0:
+                test_cam_infos.append(cam_info)
+            else:
+                train_cam_infos.append(cam_info)
+        print(f"Splitting dataset via 1/8: {len(train_cam_infos)} training images, {len(test_cam_infos)} test images")
+    else:
         train_cam_infos.extend(test_cam_infos)
         test_cam_infos = []
 

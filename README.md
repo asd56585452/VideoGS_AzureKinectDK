@@ -167,7 +167,9 @@ datasets
 
 For processed data, lanuch training with `train_sequence.py`
 ```
-python train_sequence.py --start 0 --end 200 --cuda 0 --data datasets/HiFi4G/0932dancer3 --output output/0923dancer3 --sh 0 --interval 1 --group_size 20 --resolution 2
+python train_sequence.py --start 0 --end 200 --cuda 0 --da
+ta /media/cgvmis418/2TBSSD/VideoGS/datasets/HiFi4G_Dataset/4K_Actor1_Greeting_preprocess --output /media/cgvmis418/2TBSSD/VideoGS/output/4K_
+Actor1_Greeting --sh 3 --interval 1 --group_size 20 --resolution 4 --eval
 ```
 
 <details>
@@ -210,7 +212,7 @@ output
 
 After getting the Gaussian point clouds, we can compress them by the following command:
 ```
-python compress_ckpt_2_image_precompute.py --frame_start 100 --frame_end 140 --group_size 20 --interval 1 --ply_path ~/workspace/output/v3/0923dancer3/checkpoint/ --output_folder ~/workspace/output/v3/0923dancer3/feature_image --sh_degree 0
+python compress/compress_ckpt_2_image_precompute.py --frame_start 0 --frame_end 20 --group_size 20 --interval 1 --ply_path /media/cgvmis418/2TBSSD/VideoGS/output/4K_Actor1_Greeting/checkpoint/ --output_folder /media/cgvmis418/2TBSSD/VideoGS/output/4K_Actor1_Greeting/feature_image --sh_degree 3
 ```
 The frame trained is [100, 140), so is 40 frames. 
 The output structure will be: 
@@ -228,7 +230,7 @@ output
 
 Then compress images to video by the following command:
 ```
-python compress_image_2_video.py --frame_start 100 --frame_end 140 --group_size 20 --output_path ~/workspace/output/v3/0923dancer3 --qp 25
+python compress/compress_image_2_video.py --frame_start 0 --frame_end 20 --group_size 20 --output_path /media/cgvmis418/2TBSSD/VideoGS/output/4K_Actor1_Greeting --qp 0
 ```
 The qp value is the parameter for compression, lower refers to higher quality, but larger size.
 
@@ -249,6 +251,24 @@ output
 Note that the `compress_image_2_video.py` need to be executed on linux OS due to video codec. 
 
 Finally, the compressed video folder can be hosted by nginx server and use our [volumetric video viewer]() to play. 
+
+## decompress
+
+```
+python compress/decompress_video_2_ckpt.py   --model_path /media/cgvmis418/2TBSSD/VideoGS/output/4K_Actor1_Greeting --sh 3 --frame_start 0 --frame_end 20
+```
+
+## evaluate
+
+```
+python evaluate_compression.py   --source_path /media/cgvmis418/2TBSSD/VideoGS/datasets/HiFi4G_Dataset/4K_Actor1_Greeting_preprocess   --model_path /media/cgvmis418/2TBSSD/VideoGS/output/4K_Actor1_Greeting   --ply_path /media/cgvmis418/2TBSSD/VideoGS/output/4K_Actor1_Greeting/decompress_output --frame_start 0 --frame_end 20  --sh 3  --group_size 20 --resolution 4 --eval
+```
+
+## metrics
+
+```
+python metrics.py   --model_path /media/cgvmis418/2TBSSD/VideoGS/output/4K_Actor1_Greeting   --renders_folder decompressed_renders
+```
 
 ## Acknowledgement
 Our code is based on original [gaussian-splatting](https://github.com/graphdeco-inria/gaussian-splatting) implementation. We also refer [NeuS2](https://vcai.mpi-inf.mpg.de/projects/NeuS2/) for fast key frame point cloud generation, and [3DGStream](https://sjojok.top/3dgstream/) for the inspiration of fast training strategy.

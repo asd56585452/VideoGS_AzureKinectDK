@@ -29,7 +29,7 @@ from plyfile import PlyData
 
 def finetune(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoint_iterations, checkpoint, debug_from, last_ckpt_path, last_ckpt_iter):
     first_iter = 0
-    gaussians = GaussianModel(0)
+    gaussians = GaussianModel(dataset.sh_degree)
     scene = DynamicScene(dataset)
     gaussians.load_ply(last_ckpt_path)
     gaussians.training_setup(opt)
@@ -176,7 +176,9 @@ if __name__ == "__main__":
     pcd_path = os.path.join(args.model_path, "point_cloud")
     last_ckpt_path = os.path.join(pcd_path, "iteration_{}".format(last_ckpt_iter), "point_cloud.ply")
 
-    sh_degree = 0
+    # extract sh_degree from args
+    sh_degree = lp.extract(args).sh_degree
+    print("Using sh_degree: ", sh_degree)
 
     pcd = get_ply_matrix(last_ckpt_path)
     print("Loaded point cloud with shape: ", pcd.shape)

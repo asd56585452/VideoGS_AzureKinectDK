@@ -20,13 +20,13 @@ if __name__ == '__main__':
         os.makedirs(args.output)
 
     # generate transforms.json
-    text_path = os.path.join(args.input, 'colmap', 'sparse')
+    text_path = os.path.join(args.input, 'image_white_undistortion','colmap', 'sparse','0')
     output_json_path = os.path.join(args.output, 'transforms.json')
     colmap2k_cmd = f"python colmap2k.py --text {text_path} --out {output_json_path} --keep_colmap_coords"
     os.system(colmap2k_cmd)
 
     # move the data
-    images_folder_path = os.path.join(args.input, 'image_undistortion_white')
+    images_folder_path = os.path.join(args.input, 'image_white_undistortion')
     frames = os.listdir(images_folder_path)
     frames = natsort.natsorted(frames)
 
